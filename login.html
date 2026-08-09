@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로그인 · RIFT</title>
+<meta name="description" content="디스코드 또는 Aiden Account로 로그인합니다.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo"></div>
+    <h1>로그인</h1>
+    <p>디스코드 또는 Aiden Account로 로그인할 수 있습니다.</p>
+
+    <div class="auth-btns">
+      <button class="btn btn-discord full" id="loginDiscord">
+        <i class="fa-brands fa-discord"></i> 디스코드로 로그인
+      </button>
+      <a class="btn btn-aiden full" id="loginAiden" href="#">
+        <img src="assets/img/aiden-account.png" alt=""> Aiden Account로 로그인
+      </a>
+    </div>
+
+    <p class="auth-note" id="authNote"></p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  document.getElementById('loginAiden').href = RIFT_CONFIG.aidenAccountUrl;
+  const note = document.getElementById('authNote');
+  document.getElementById('loginDiscord').addEventListener('click', async () => {
+    if (!RIFT.connected) {
+      toast('Supabase 설정이 필요합니다.');
+      return;
+    }
+    try { await RIFT.signInDiscord(); }
+    catch (e) { toast('로그인에 실패했습니다: ' + e.message); }
+  });
+  RIFT.ready.then(() => {
+    if (RIFT.user) { location.replace('index.html'); return; }
+    note.textContent = RIFT.connected
+      ? '로그인 정보는 서버 이용 기록 확인에만 사용합니다.'
+      : 'Supabase 연결 전에는 디스코드 로그인이 동작하지 않습니다. assets/js/config.js 에 URL과 anon key를 넣어주세요.';
+  });
+</script>
+</body>
+</html>

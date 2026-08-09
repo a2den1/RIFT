@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 · RIFT</title>
+<meta name="description" content="RIFT 관리자 페이지.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="no-anim">
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<div class="page-head">
+  <h1>관리자</h1>
+  <p>공지, 이벤트, 경기 일정과 관리자 계정을 관리합니다.</p>
+</div>
+
+<div id="adminDenied" class="hidden">
+  <div class="banner">
+    <i class="fa-solid fa-lock"></i>
+    <div><b>접근 권한이 없습니다</b><p id="deniedMsg">관리자 계정으로 로그인해 주세요.</p></div>
+  </div>
+  <a href="login.html" class="btn btn-primary">로그인</a>
+</div>
+
+<section class="panel hidden" id="diagPanel" style="margin-bottom:14px">
+  <h2>권한 진단</h2>
+  <p>DB가 지금 로그인한 계정을 어떻게 판단하는지 보여줍니다.</p>
+  <div class="rows" id="diagRows"></div>
+  <pre class="diag-raw" id="diagRaw"></pre>
+  <button class="btn btn-soft btn-sm" id="diagRefresh"><i class="fa-solid fa-rotate"></i> 다시 확인</button>
+</section>
+
+<div id="adminPanel" class="hidden">
+  <div class="banner">
+    <i class="fa-solid fa-circle-info"></i>
+    <div>
+      <b>등록한 내용은 즉시 사이트에 반영됩니다</b>
+      <p>권한은 Supabase의 admins 테이블과 RLS 정책이 최종 확인합니다.</p>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+
+    <section class="panel">
+      <h2>공지 등록</h2>
+      <p>홈 소식 영역에 표시됩니다.</p>
+      <form data-table="notices">
+        <div class="field"><label>제목</label><input name="title" required></div>
+        <div class="field"><label>내용</label><textarea name="body"></textarea></div>
+        <div class="field"><label>이미지 주소 (선택)</label><input name="image_url" placeholder="https://..."></div>
+        <button class="btn btn-primary">등록</button>
+      </form>
+      <div class="rows" data-list="notices"></div>
+    </section>
+
+    <section class="panel">
+      <h2>이벤트 등록</h2>
+      <p>홈 이벤트 영역에 표시됩니다.</p>
+      <form data-table="events">
+        <div class="field"><label>제목</label><input name="title" required></div>
+        <div class="field"><label>내용</label><textarea name="body"></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>시작일</label><input name="starts_at" type="date" required></div>
+          <div class="field"><label>종료일</label><input name="ends_at" type="date"></div>
+        </div>
+        <button class="btn btn-primary">등록</button>
+      </form>
+      <div class="rows" data-list="events"></div>
+    </section>
+
+    <section class="panel">
+      <h2>경기 등록</h2>
+      <p>홈과 공식 리그 페이지의 다음 경기에 표시됩니다.</p>
+      <form data-table="matches">
+        <div class="field-row">
+          <div class="field"><label>홈 구단</label><input name="home" required></div>
+          <div class="field"><label>원정 구단</label><input name="away" required></div>
+        </div>
+        <div class="field"><label>경기 시각</label><input name="starts_at" type="datetime-local" required></div>
+        <div class="field"><label>맵</label><input name="map" placeholder="협곡"></div>
+        <div class="field"><label>이미지 주소 (선택)</label><input name="image_url" placeholder="https://..."></div>
+        <button class="btn btn-primary">등록</button>
+      </form>
+      <div class="rows" data-list="matches"></div>
+    </section>
+
+    <section class="panel">
+      <h2>관리자 추가</h2>
+      <p>디스코드 사용자명을 정확히 입력해 주세요.</p>
+      <form data-table="admins">
+        <div class="field"><label>디스코드 사용자명</label><input name="discord_username" placeholder="_a2den." required></div>
+        <div class="field"><label>디스코드 ID (선택)</label><input name="discord_id" placeholder="숫자 ID. 넣어두면 이름이 바뀌어도 권한이 유지됩니다"></div>
+        <button class="btn btn-primary">추가</button>
+      </form>
+      <div class="rows" data-list="admins"></div>
+    </section>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공식 리그 · RIFT</title>
+<meta name="description" content="RIFT 공식 리그 순위와 경기 일정.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<div class="page-head">
+  <h1>공식 리그</h1>
+  <p>7vs7 점령전으로 진행하는 구단 대항 리그입니다.</p>
+</div>
+
+<section class="section" style="padding-top:0">
+  <div class="grid g3">
+    <div class="card">
+      <div class="c-ic"><i class="fa-solid fa-flag"></i></div>
+      <h3>점령전</h3>
+      <p>중앙 거점의 점령 상황으로 승패가 결정됩니다. 킬은 거점을 확보하기 위한 수단입니다.</p>
+    </div>
+    <div class="card">
+      <div class="c-ic"><i class="fa-solid fa-dice-three"></i></div>
+      <h3>BO3</h3>
+      <p>먼저 2세트를 이긴 구단이 승리합니다.</p>
+    </div>
+    <div class="card">
+      <div class="c-ic"><i class="fa-solid fa-eye-slash"></i></div>
+      <h3>관전 제한</h3>
+      <p>일반 유저의 경기 관전은 현재 금지되어 있습니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="s-head">
+    <h2>다음 경기</h2>
+    <p>경기 시간은 관리자가 등록한 일정 기준입니다.</p>
+  </div>
+  <div class="matches" id="matches"></div>
+</section>
+
+<section class="section">
+  <div class="s-head">
+    <h2>구단 순위</h2>
+    <p>구단 이름에 마우스를 올리면 상세 정보가 표시됩니다.</p>
+  </div>
+  <div class="tbl-card">
+    <div class="tbl-scroll">
+      <table class="tbl" style="min-width:740px">
+        <thead>
+          <tr>
+            <th class="c">순위</th><th>구단</th><th class="c">경기</th><th class="c">승</th>
+            <th class="c">패</th><th class="c">세트 득실</th><th>인지도</th><th class="c">우승</th>
+          </tr>
+        </thead>
+        <tbody id="standings"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="s-head"><h2>시즌 기록</h2></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="c-ic"><i class="fa-solid fa-trophy"></i></div>
+      <h3>시즌 MVP</h3>
+      <p>규정 경기 수를 충족한 선수를 대상으로 킬 · 피해량 · 최소 데스 기록을 종합해 선정합니다.</p>
+      <div class="crowns" style="grid-template-columns:1fr">
+        <div class="crown"><i class="fa-solid fa-user"></i><span>시즌 종료 후 공개</span><b>—</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="c-ic"><i class="fa-solid fa-crown"></i></div>
+      <h3>Golden Crown</h3>
+      <p>포지션별로 한 명씩 수여합니다. MVP와 동시 수상도 가능합니다.</p>
+      <div class="crowns">
+        <div class="crown"><i class="fa-solid fa-khanda"></i><span>공격수</span><b>—</b></div>
+        <div class="crown"><i class="fa-solid fa-shield-halved"></i><span>탱커</span><b>—</b></div>
+        <div class="crown"><i class="fa-solid fa-crosshairs"></i><span>원거리</span><b>—</b></div>
+        <div class="crown"><i class="fa-solid fa-hand-holding-medical"></i><span>서포터</span><b>—</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

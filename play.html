@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서버 접속 · RIFT</title>
+<meta name="description" content="RIFT 서버 주소와 접속 순서 안내.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<div class="page-head">
+  <h1>서버 접속</h1>
+  <p>마인크래프트 자바 에디션에서 아래 주소로 접속합니다.</p>
+</div>
+
+<section class="section" style="padding-top:0">
+  <div class="play-ip">
+    <div>
+      <div class="lbl">서버 주소</div>
+      <code data-copy-ip></code>
+    </div>
+    <button class="btn btn-primary" data-copy-btn><i class="fa-regular fa-copy"></i> 주소 복사</button>
+  </div>
+
+  <div class="stats" style="margin-top:14px">
+    <div class="stat"><div class="stat-n" data-version></div><div class="stat-l">지원 버전</div></div>
+    <div class="stat"><div class="stat-n" id="onlineCount">0</div><div class="stat-l">현재 접속자</div></div>
+    <div class="stat"><div class="stat-n">무료</div><div class="stat-l">베타 기간 구단 창설</div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="s-head"><h2>접속 순서</h2></div>
+  <div class="steps">
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div><h3>자바 에디션 실행</h3><p>런처에서 <span data-version></span> 프로필로 게임을 실행합니다.</p></div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div><h3>멀티플레이에 서버 추가</h3><p>서버 주소란에 <code data-copy-ip></code> 를 입력합니다.</p></div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div><h3>직업 선택</h3><p>공격수 · 탱커 · 원거리 · 서포터 중 하나를 고릅니다. 이후 변경하려면 직업 변경권이 필요합니다.</p></div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">4</div>
+      <div><h3>기지 건설</h3><p>땅 보호가 없으므로 위치 선정에 주의합니다.</p></div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">5</div>
+      <div><h3>구단 가입 또는 창설</h3><p>공식 리그에 나가려면 구단이 필요합니다. 선수 모집은 디스코드에서 진행합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="grid g2">
+    <div class="notice">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div><b>베타 데이터는 초기화됩니다</b><p>베타 종료 시 모든 데이터가 삭제되고 프리시즌부터 정식 저장됩니다.</p></div>
+    </div>
+    <div class="notice">
+      <i class="fa-brands fa-discord"></i>
+      <div><b>접속 문의</b><p>버전을 확인한 뒤에도 접속되지 않으면 디스코드로 알려주세요.</p></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

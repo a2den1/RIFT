@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RIFT</title>
+<meta name="description" content="약탈 야생과 7vs7 공식 리그를 운영하는 마인크래프트 서버.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="intro">
+    <span class="gl gl-a"></span>
+    <span class="gl gl-b"></span>
+    <span class="il-full"></span>
+  </div>
+
+  <p class="hero-desc">
+    야생에서 자원을 파밍하고 다른 유저와 경쟁합니다.<br>
+    구단에 소속되면 7vs7 공식 리그에도 참가할 수 있습니다.
+  </p>
+
+  <div class="hero-ip">
+    <code data-copy-ip></code>
+    <button class="btn btn-soft btn-sm" data-copy-btn><i class="fa-regular fa-copy"></i> 복사</button>
+  </div>
+
+  <div class="hero-meta">
+    <span id="onlineChip"><span class="live-dot"></span><b id="onlineCount">0</b>명 접속 중</span>
+    <span data-version></span>
+  </div>
+
+  <div class="hero-start">
+    <a href="play.html" class="btn btn-primary btn-lg">시작하기</a>
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="s-head split">
+    <div><h2>소식</h2></div>
+    <a href="league.html" class="card-link">경기 일정 <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+  <div class="news" id="news"></div>
+</section>
+
+<section class="section wrap">
+  <div class="s-head"><h2>진행 중인 이벤트</h2></div>
+  <div class="grid g2" id="events"></div>
+</section>
+
+<section class="section wrap">
+  <article class="feature">
+    <div class="f-media"><img class="shot" id="imgWild" src="" alt="야생"></div>
+    <div class="f-body">
+      <div class="f-kicker">야생</div>
+      <h2>땅 보호 없는 약탈 야생</h2>
+      <p>기지를 직접 짓고 자원을 모읍니다. 보호 구역이 없기 때문에 다른 유저의 기지를 발견하면 약탈할 수 있습니다. 전투 중에는 도주·보관 명령어가 제한됩니다.</p>
+      <a href="guide.html#wild" class="btn btn-soft">야생 규칙</a>
+    </div>
+  </article>
+
+  <article class="feature rev">
+    <div class="f-media"><img class="shot" id="imgLeague" src="" alt="공식 리그"></div>
+    <div class="f-body">
+      <div class="f-kicker">공식 리그</div>
+      <h2>7vs7 점령전</h2>
+      <p>중앙 거점을 두고 두 구단이 겨룹니다. 킬은 승리 조건이 아니며 거점 점령 상황으로 승패가 결정됩니다. 경기는 BO3로 진행합니다.</p>
+      <a href="league.html" class="btn btn-soft">리그 순위</a>
+    </div>
+  </article>
+</section>
+
+<section class="section wrap">
+  <div class="s-head">
+    <h2>직업</h2>
+    <p>첫 접속 때 하나를 고릅니다. 야생과 리그에서 같은 직업을 사용합니다.</p>
+  </div>
+  <div class="jobs" id="jobs"></div>
+</section>
+
+<section class="section wrap">
+  <div class="s-head split">
+    <div><h2>다음 경기</h2></div>
+    <a href="league.html" class="card-link">전체 일정 <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+  <div class="matches" id="matches"></div>
+</section>
+
+<section class="section wrap">
+  <div class="grid g2">
+    <div class="tbl-card">
+      <div class="tbl-head">
+        <h3>구단 순위</h3>
+        <a href="league.html" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="tbl-scroll"><table class="tbl" style="min-width:0"><tbody id="homeClubs"></tbody></table></div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-head">
+        <h3>PVP 킬</h3>
+        <a href="ranking.html" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="tbl-scroll"><table class="tbl" style="min-width:0"><tbody id="homePlayers"></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="cta">
+    <h2>접속 준비가 끝났습니다</h2>
+    <p>서버 주소와 접속 순서를 안내해 드립니다.</p>
+    <a href="play.html" class="btn btn-primary btn-lg">시작하기</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  // 이미지 경로는 config.js 에서 관리합니다.
+  document.getElementById('imgWild').src = RIFT_CONFIG.images.wild;
+  document.getElementById('imgLeague').src = RIFT_CONFIG.images.league;
+  const JOBS = [
+    ['공격수', '전선을 뚫고 상대를 압박합니다.'],
+    ['탱커', '거점을 지키고 피해를 받아냅니다.'],
+    ['원거리', '거리를 두고 피해를 누적시킵니다.'],
+    ['서포터', '아군을 회복하고 강화합니다.'],
+  ];
+  document.getElementById('jobs').innerHTML = JOBS.map(([n, d]) => `
+    <div class="job">
+      <div class="job-media"><img class="shot" src="${RIFT_CONFIG.images.jobs[n]}" alt="${n}"></div>
+      <div class="job-body"><h3>${n}</h3><p>${d}</p></div>
+    </div>`).join('');
+</script>
+</body>
+</html>

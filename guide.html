@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도움말 · RIFT</title>
+<meta name="description" content="RIFT 서버의 야생, 직업, 경제, 구단, 공식 리그 규칙 안내.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="no-anim">
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+
+<main class="wrap">
+
+<div class="page-head">
+  <h1>도움말</h1>
+  <p>RIFT의 야생 규칙부터 공식 리그 운영까지, 서버에서 필요한 내용을 모두 정리했습니다.</p>
+</div>
+
+<!-- 모바일 목차 -->
+<div class="toc-mobile" id="tocMobile">
+  <div class="seg">
+    <a href="#intro">서버 소개</a>
+    <a href="#wild">야생</a>
+    <a href="#job">직업</a>
+    <a href="#economy">경제</a>
+    <a href="#reward">보상</a>
+    <a href="#bounty">현상금</a>
+    <a href="#club">구단</a>
+    <a href="#contract">계약·이적</a>
+    <a href="#league">공식 리그</a>
+    <a href="#record">시즌 기록</a>
+    <a href="#ranking">랭킹</a>
+    <a href="#season">베타·시즌</a>
+  </div>
+</div>
+
+<div class="guide">
+
+  <!-- 좌측 목차 -->
+  <aside class="toc" id="toc">
+    <div class="toc-title">목차</div>
+    <a href="#intro">서버 소개</a>
+    <a href="#wild">야생</a>
+    <a href="#wild-rule" class="sub">약탈과 기지</a>
+    <a href="#wild-cmd" class="sub">편의 기능</a>
+    <a href="#wild-pvp" class="sub">PVP 중 제한</a>
+    <a href="#job">직업</a>
+    <a href="#economy">경제</a>
+    <a href="#economy-fund" class="sub">개인 자금과 구단 자금</a>
+    <a href="#economy-shop" class="sub">일일 상점</a>
+    <a href="#reward">플레이 보상</a>
+    <a href="#bounty">현상금</a>
+    <a href="#club">구단</a>
+    <a href="#club-roster" class="sub">로스터</a>
+    <a href="#club-role" class="sub">직책</a>
+    <a href="#club-level" class="sub">인지도와 레벨</a>
+    <a href="#contract">계약과 이적시장</a>
+    <a href="#league">공식 리그</a>
+    <a href="#league-rule" class="sub">경기 방식</a>
+    <a href="#league-watch" class="sub">관전</a>
+    <a href="#record">시즌 기록</a>
+    <a href="#record-mvp" class="sub">시즌 MVP</a>
+    <a href="#record-crown" class="sub">Golden Crown</a>
+    <a href="#ranking">랭킹</a>
+    <a href="#season">베타와 시즌</a>
+  </aside>
+
+  <!-- 본문 -->
+  <article class="doc">
+
+    <h2 id="intro">서버 소개</h2>
+    <p class="lead">RIFT는 야생에서 장비와 자원을 파밍하고 다른 유저들과 경쟁하면서, 구단에 소속되어 7vs7 공식 리그에도 참가할 수 있는 서버입니다.</p>
+    <div class="kv">
+      <div><b>약탈 야생</b><span>땅 보호 없음</span></div>
+      <div><b>직업 4종</b><span>야생 · 리그 공용</span></div>
+      <div><b>구단 시스템</b><span>계약과 이적</span></div>
+      <div><b>7vs7 리그</b><span>점령전 · BO3</span></div>
+    </div>
+
+    <h2 id="wild">야생</h2>
+    <p>RIFT의 기본은 약탈 야생입니다.</p>
+
+    <h3 id="wild-rule">약탈과 기지</h3>
+    <p>땅 보호는 없습니다. 기지를 직접 건설하고, 다른 유저의 기지를 발견하면 약탈할 수 있습니다. 기지의 위치 선정과 방어 설계가 곧 생존력이 됩니다.</p>
+
+    <h3 id="wild-cmd">편의 기능</h3>
+    <p>오버월드와 네더를 이용할 수 있으며, 아래 명령어를 지원합니다.</p>
+    <ul>
+      <li><code>/tpa</code> — 다른 유저에게 텔레포트 요청</li>
+      <li><code>/home</code> — 지정한 거점으로 이동</li>
+      <li><code>/금고</code> — 개인 보관함 열기</li>
+    </ul>
+
+    <h3 id="wild-pvp">PVP 중 제한</h3>
+    <div class="callout warn">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <b>전투 중에는 도주·보호 명령어가 막힙니다</b>
+        <p>PVP 중에는 <code>/tpa</code>, <code>/home</code>, <code>/금고</code> 등 전투에서 도주하거나 아이템을 보호하는 데 사용할 수 있는 명령어가 제한됩니다.</p>
+      </div>
+    </div>
+
+    <h2 id="job">직업</h2>
+    <p>처음 접속하면 직업을 선택합니다. 선택한 직업은 야생과 리그에서 모두 사용되며, 상점에서 직업 변경권을 구매해 변경할 수 있습니다.</p>
+    <div class="kv">
+      <div><b>공격수</b><span>전선을 뚫는 딜링</span></div>
+      <div><b>탱커</b><span>거점 유지와 방어</span></div>
+      <div><b>원거리</b><span>거리를 둔 지속 피해</span></div>
+      <div><b>서포터</b><span>회복과 강화</span></div>
+    </div>
+
+    <h2 id="economy">경제</h2>
+
+    <h3 id="economy-fund">개인 자금과 구단 자금</h3>
+    <p>개인 자금과 구단 자금이 따로 존재합니다. 개인 자금은 상점이나 유저 거래 등에 사용하고, 구단 자금은 선수 계약금과 이적료 등에 사용합니다.</p>
+
+    <h3 id="economy-shop">일일 상점</h3>
+    <p>매일 서버 전체에 동일한 랜덤 상품 4개가 등장합니다. 상품은 모든 유저에게 같은 구성으로 노출되며, 갱신 전까지만 구매할 수 있습니다.</p>
+
+    <h2 id="reward">플레이 보상</h2>
+    <p>접속시간에 따라 보상을 받을 수 있으며 AFK도 접속시간으로 인정됩니다.</p>
+    <ul>
+      <li>일일 퀘스트</li>
+      <li>구리 던전</li>
+      <li>워든 등 별도 콘텐츠</li>
+    </ul>
+
+    <h2 id="bounty">현상금</h2>
+    <p>게임머니를 사용해 다른 유저에게 현상금을 걸 수 있습니다. 여러 명이 한 유저에게 현상금을 걸면 금액이 누적되고, 해당 유저를 처치한 사람이 현상금을 획득합니다.</p>
+    <div class="callout">
+      <i class="fa-solid fa-sack-dollar"></i>
+      <div>
+        <b>현상금 순위는 공개됩니다</b>
+        <p>누구에게 얼마가 걸려 있는지 랭킹 페이지에서 확인할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <h2 id="club">구단</h2>
+
+    <h3 id="club-roster">로스터</h3>
+    <p>구단은 최대 15명까지 로스터를 구성할 수 있으며, 공식 리그 참가를 위해서는 최소 12명이 필요합니다.</p>
+    <div class="kv">
+      <div><b>15명</b><span>최대 로스터</span></div>
+      <div><b>12명</b><span>리그 참가 최소 인원</span></div>
+      <div><b>7명</b><span>경기 출전 인원</span></div>
+    </div>
+
+    <h3 id="club-role">직책</h3>
+    <p>구단주는 직접 리그에 출전할 수 있고 부단장은 선택사항입니다. 단장 직책은 없습니다.</p>
+
+    <h3 id="club-level">인지도와 레벨</h3>
+    <p>리그 승리와 플레이시간 등에 따라 구단 인지도가 상승하며, 특정 구간에 도달하면 구단 레벨이 올라갑니다.</p>
+
+    <h2 id="contract">계약과 이적시장</h2>
+    <p>연봉은 없으며 선수 영입 시 계약금을 지급합니다. 계약은 별도의 기간 없이 유지됩니다.</p>
+    <p>선수 모집, FA, 협상, 이적시장 등은 주로 디스코드에서 진행하고, 실제 계약과 소속 변경은 마인크래프트에서 처리합니다.</p>
+    <div class="flow">
+      <em><i class="fa-brands fa-discord"></i> 모집 · 협상</em>
+      <i class="fa-solid fa-chevron-right"></i>
+      <em><i class="fa-solid fa-handshake"></i> 조건 합의</em>
+      <i class="fa-solid fa-chevron-right"></i>
+      <em><i class="fa-solid fa-cube"></i> 인게임 계약 체결</em>
+    </div>
+
+    <h2 id="league">공식 리그</h2>
+
+    <h3 id="league-rule">경기 방식</h3>
+    <p>공식 리그는 7vs7 점령전으로 진행됩니다. 중앙 거점을 두고 두 구단이 경쟁하며 킬 자체가 승리 조건은 아닙니다. 경기는 BO3로 진행되며 먼저 2세트를 승리한 구단이 최종 승리합니다.</p>
+
+    <h3 id="league-watch">관전</h3>
+    <p>일반 유저의 경기 관전은 현재 금지됩니다.</p>
+
+    <h2 id="record">시즌 기록</h2>
+
+    <h3 id="record-mvp">시즌 MVP</h3>
+    <p>규정 경기 수를 충족한 선수들을 대상으로 킬 · 피해량 · 최소 데스 기록을 종합하여 시즌 MVP를 선정합니다.</p>
+
+    <h3 id="record-crown">Golden Crown</h3>
+    <p>각 포지션에서 시즌 최고의 선수에게 Golden Crown을 수여합니다. 공격수 · 탱커 · 원거리 · 서포터에서 각각 한 명씩 선정되며, MVP와 Golden Crown 동시 수상도 가능합니다.</p>
+
+    <h2 id="ranking">랭킹</h2>
+    <p>개인 랭킹은 PVP 킬 · 플레이타임 · 보유 게임머니를, 구단 랭킹은 리그 순위 · 인지도 · 역대 우승 횟수 등을 공개합니다. MVP, Golden Crown, 우승 기록 등의 주요 기록은 프로필과 역대 기록에 남습니다.</p>
+
+    <h2 id="season">베타와 시즌</h2>
+    <p>베타 기간에는 구단을 무료로 창설할 수 있습니다. 베타가 종료되면 모든 데이터가 초기화됩니다. 프리시즌부터 정식 데이터가 저장되며, 이때부터 구단 창설에 결제가 필요합니다.</p>
+    <div class="flow">
+      <em>BETA</em><i class="fa-solid fa-chevron-right"></i>
+      <em>전체 초기화</em><i class="fa-solid fa-chevron-right"></i>
+      <em>PRE-SEASON</em><i class="fa-solid fa-chevron-right"></i>
+      <em>SEASON 1</em><i class="fa-solid fa-chevron-right"></i>
+      <em>SEASON 2</em>
+    </div>
+
+  </article>
+</div>
+
+</main>
+
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
