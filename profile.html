@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 정보 · RIFT</title>
+<meta name="description" content="RIFT 프로필, 경험치, 구단 생성과 이적 신청.">
+<link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="no-anim">
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="index.html" class="brand" aria-label="RIFT 홈">
+      <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="index.html">홈</a>
+      <a href="guide.html">도움말</a>
+      <a href="league.html">공식 리그</a>
+      <a href="ranking.html">랭킹</a>
+      <a href="support.html">후원</a>
+    </nav>
+    <div class="header-actions">
+      <span id="authSlot"></span>
+      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<div class="page-head">
+  <h1>내 정보</h1>
+  <p>프로필과 경험치를 확인하고, 구단을 만들거나 이적을 신청합니다.</p>
+</div>
+
+<!-- 로그인 안 됨 -->
+<div id="needLogin" class="hidden">
+  <div class="banner">
+    <i class="fa-solid fa-user"></i>
+    <div><b>로그인이 필요합니다</b><p id="needLoginMsg">디스코드로 로그인하면 프로필을 설정할 수 있습니다.</p></div>
+  </div>
+  <a href="login.html" class="btn btn-primary">로그인</a>
+</div>
+
+<div id="me" class="hidden">
+
+  <!-- 프로필 요약 -->
+  <section class="me-card">
+    <img class="me-skin" id="meSkin" alt=""
+         src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='165'%3E%3Crect width='80' height='165' fill='%23353542'/%3E%3C/svg%3E">
+    <div class="me-body">
+      <div class="me-name">
+        <h2 id="meName">—</h2>
+        <span class="chip" id="mePronouns" hidden></span>
+      </div>
+      <div class="me-tags" id="meTags"></div>
+      <p class="me-bio" id="meBio"></p>
+
+      <div class="xp">
+        <div class="xp-head">
+          <b id="xpLevel">Lv. 1</b>
+          <span id="xpText" class="muted"></span>
+        </div>
+        <div class="xp-bar"><i id="xpFill"></i></div>
+        <small class="muted">경험치는 서버 플레이로 쌓이며 사이트에서는 수정할 수 없습니다.</small>
+      </div>
+    </div>
+  </section>
+
+  <div class="admin-grid" style="margin-top:14px">
+
+    <!-- 프로필 수정 -->
+    <section class="panel">
+      <h2>프로필 수정</h2>
+      <p>랭킹과 구단 명단에 표시되는 정보입니다.</p>
+      <form id="profileForm">
+        <div class="field">
+          <label>마인크래프트 닉네임</label>
+          <input name="mc_name" maxlength="16" placeholder="게임에서 쓰는 닉네임" required>
+        </div>
+        <div class="field">
+          <label>대명사</label>
+          <input name="pronouns" maxlength="24" list="pronounList" placeholder="예: they/them">
+          <datalist id="pronounList">
+            <option value="he/him"></option>
+            <option value="she/her"></option>
+            <option value="they/them"></option>
+            <option value="he/they"></option>
+            <option value="she/they"></option>
+            <option value="밝히지 않음"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label>직업</label>
+          <select name="job">
+            <option value="">선택 안 함</option>
+            <option>공격수</option>
+            <option>탱커</option>
+            <option>원거리</option>
+            <option>서포터</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>한 줄 소개</label>
+          <textarea name="bio" maxlength="120" placeholder="선택 사항"></textarea>
+        </div>
+        <button class="btn btn-primary">저장</button>
+      </form>
+    </section>
+
+    <!-- 구단 -->
+    <section class="panel" id="clubPanel">
+      <h2>구단</h2>
+      <p id="clubLead">소속 구단 정보입니다.</p>
+      <div id="clubBody"></div>
+    </section>
+
+  </div>
+
+  <!-- 구단주 전용 -->
+  <section class="panel hidden" id="ownerPanel" style="margin-top:14px">
+    <h2>구단 관리</h2>
+    <p>로고를 바꾸고 들어온 이적 신청을 처리합니다.</p>
+
+    <div class="field" style="margin-bottom:16px">
+      <label>구단 로고</label>
+      <div class="upload-row">
+        <input id="logoUrl" placeholder="주소를 넣거나 파일을 올리세요">
+        <label class="btn btn-soft btn-sm upload-btn" title="파일 올리기">
+          <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          <input type="file" accept="image/*" hidden>
+        </label>
+        <button class="btn btn-soft btn-sm" id="logoSave">저장</button>
+      </div>
+    </div>
+
+    <h3 style="font-size:16px;margin-top:20px">들어온 이적 신청</h3>
+    <div class="rows" id="incoming"></div>
+
+    <h3 style="font-size:16px;margin-top:20px">로스터</h3>
+    <div class="rows" id="roster"></div>
+  </section>
+
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"></div>
+      <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
+    </div>
+    <div class="footer-nav">
+      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
+      <div><h5>기타</h5><a href="support.html">후원</a><a href="profile.html">내 정보</a><a href="#" data-discord>디스코드</a></div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© 2026 RIFT</span>
+    <span>Minecraft 및 Mojang과 제휴 관계가 아닙니다.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/profile.js"></script>
+</body>
+</html>

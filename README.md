@@ -10,6 +10,7 @@ league.html     공식 리그
 ranking.html    랭킹
 support.html    후원
 login.html      로그인
+profile.html    내 정보 (프로필 · 경험치 · 구단 · 이적)
 admin.html      관리자 (권한 있는 계정만)
 
 assets/js/config.js   설정 (서버 주소, Supabase 키, 이미지 경로)

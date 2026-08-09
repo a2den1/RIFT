@@ -51,6 +51,18 @@
     ['server_status', 'schema.sql'],
     ['site_images', 'add-images-locks.sql'],
     ['tab_locks', 'add-images-locks.sql'],
+    ['profiles', 'add-profiles.sql'],
+    ['transfers', 'add-profiles.sql'],
+  ];
+
+  // rpc 는 없으면 "Could not find" 오류가 납니다. 권한 거부는 존재한다는 뜻입니다.
+  const FUNCS = [
+    ['whoami', {}, 'fix-admin.sql'],
+    ['create_club', { p_name: '', p_logo: '' }, 'add-profiles.sql'],
+    ['request_transfer', { p_club: '', p_note: '' }, 'add-profiles.sql'],
+    ['decide_transfer', { p_id: '00000000-0000-0000-0000-000000000000', p_accept: false }, 'add-profiles.sql'],
+    ['leave_club', {}, 'add-profiles.sql'],
+    ['set_club_logo', { p_logo: '' }, 'add-profiles.sql'],
   ];
 
   async function checkTables() {
@@ -64,8 +76,13 @@
         return { t, file, ok: !error, msg: error?.message || '' };
       })
     );
-    const { error: fnErr } = await sb.rpc('whoami');
-    const fnOk = !fnErr;
+    const funcs = await Promise.all(
+      FUNCS.map(async ([fn, args, file]) => {
+        const { error } = await sb.rpc(fn, args);
+        return { fn, file, ok: !error || !/Could not find/i.test(error.message) };
+      })
+    );
+    const fnOk = funcs.every((f) => f.ok);
 
     // 스토리지 버킷 — 공개 주소를 찔러 보면 버킷 유무가 메시지로 구분됩니다.
     let bucketOk = false;
@@ -75,14 +92,17 @@
       bucketOk = j.code !== 'NoSuchBucket';
     } catch {}
 
-    const missing = results.filter((r) => !r.ok);
-    const files = [...new Set(missing.map((m) => m.file))];
-    if (!fnOk) files.push('fix-admin.sql');
+    const files = [
+      ...new Set([
+        ...results.filter((r) => !r.ok).map((m) => m.file),
+        ...funcs.filter((f) => !f.ok).map((f) => f.file),
+      ]),
+    ];
     if (!bucketOk) files.push('add-storage.sql');
 
     box.innerHTML =
       results.map((r) => line(r.ok, `테이블 ${r.t}`, r.ok ? '있음' : `없음 — supabase/${r.file} 실행 필요`)).join('') +
-      line(fnOk, '함수 whoami()', fnOk ? '있음' : `없음 — supabase/fix-admin.sql 실행 필요 (${fnErr?.message || ''})`) +
+      funcs.map((f) => line(f.ok, `함수 ${f.fn}()`, f.ok ? '있음' : `없음 — supabase/${f.file} 실행 필요`)).join('') +
       line(bucketOk, '스토리지 버킷 site', bucketOk ? '있음 — 파일 업로드를 쓸 수 있습니다' : '없음 — supabase/add-storage.sql 실행 필요') +
       (files.length
         ? `<div class="row-item"><span class="no-dot"><i class="fa-solid fa-triangle-exclamation"></i></span>

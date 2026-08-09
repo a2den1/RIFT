@@ -29,6 +29,37 @@
   store.image = (key) => store.images[key] || CFG.images[key] || '';
   store.lockOf = (page) => store.locks.find((l) => l.page === page && l.locked) || null;
 
+  /* ---------- 경험치 ----------
+     레벨 n 에 도달하려면 100 * (n-1)^2 의 경험치가 필요합니다. */
+  store.levelOf = (xp) => Math.floor(Math.sqrt(Math.max(xp, 0) / 100)) + 1;
+  store.levelBand = (xp) => {
+    const lv = store.levelOf(xp);
+    const from = 100 * (lv - 1) ** 2;
+    const to = 100 * lv ** 2;
+    return { level: lv, from, to, pct: Math.min(100, Math.round(((xp - from) / (to - from)) * 100)) };
+  };
+
+  // 로그인한 사용자의 프로필 행을 확보합니다. 없으면 만들어 둡니다.
+  store.ensureProfile = async () => {
+    if (!sb || !store.user) return null;
+    const { data } = await sb.from('profiles').select('*').eq('id', store.user.id).maybeSingle();
+    if (data) {
+      store.profile = data;
+      return data;
+    }
+    const { data: made, error } = await sb
+      .from('profiles')
+      .insert({ id: store.user.id, discord_username: discordName(store.user) })
+      .select()
+      .maybeSingle();
+    if (error) {
+      console.warn('[RIFT] 프로필 생성 실패:', error.message);
+      return null;
+    }
+    store.profile = made;
+    return made;
+  };
+
   /* ---------- 로그인 ---------- */
   // 디스코드 신규 계정은 구분자가 0 이라 `_a2den.#0` 형태로 옵니다.
   // 비교는 SQL 의 norm_discord() 와 동일하게 소문자 + `#0` 제거로 맞춥니다.
@@ -112,7 +143,14 @@
       const { data } = await sb.from('server_status').select('online_count').limit(1);
       if (data && data.length) store.onlineCount = data[0].online_count;
 
-      // 관리자가 바꾼 이미지와 탭 잠금 상태
+        // 프로필의 대명사를 랭킹 호버 카드에도 보여줍니다.
+      const { data: profs } = await sb.from('profiles').select('mc_name,pronouns,club,job');
+      (profs || []).forEach((pr) => {
+        const p = store.players.find((x) => x.name === pr.mc_name);
+        if (p && pr.pronouns) p.pronouns = pr.pronouns;
+      });
+
+    // 관리자가 바꾼 이미지와 탭 잠금 상태
       const [{ data: imgs }, { data: locks }] = await Promise.all([
         sb.from('site_images').select('key,url'),
         sb.from('tab_locks').select('page,locked,reason'),

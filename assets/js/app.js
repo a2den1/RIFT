@@ -228,14 +228,19 @@ function initAuthUI() {
   const slot = $('#authSlot');
   const nav = $('#nav');
 
-  if (RIFT.isAdmin && nav && !$('.admin-link', nav)) {
+  const here = location.pathname.split('/').pop() || '';
+  const addTab = (href, label, cls) => {
+    if (!nav || $(`a[href="${href}"]`, nav)) return;
     const a = document.createElement('a');
-    a.href = 'admin.html';
-    a.className = 'admin-link';
-    a.textContent = '관리자';
+    a.href = href;
+    if (cls) a.className = cls;
+    a.textContent = label;
     nav.append(a);
-    if ((location.pathname.split('/').pop() || '') === 'admin.html') a.classList.add('current');
-  }
+    if (here === href) a.classList.add('current');
+  };
+
+  if (RIFT.user) addTab('profile.html', '내 정보');
+  if (RIFT.isAdmin) addTab('admin.html', '관리자', 'admin-link');
 
   if (!slot) return;
   if (RIFT.user) {
@@ -640,6 +645,7 @@ function initHoverCard() {
           <div class="profile-sub">
             <span class="chip">${p.job}</span>
             <span class="chip">${p.club || '무소속'}</span>
+            ${p.pronouns ? `<span class="chip">${p.pronouns}</span>` : ''}
           </div>
         </div>
       </div>
