@@ -51,6 +51,14 @@
   <p>SQL 실행 결과와 로그인 계정 권한을 확인합니다.</p>
   <div class="rows" id="diagTables"></div>
   <div class="rows" id="diagRows"></div>
+
+  <div class="diag-fix hidden" id="diagFix">
+    <b>이 계정을 관리자로 등록하려면</b>
+    <p>아래 SQL 을 Supabase → SQL Editor 에 붙여넣고 Run 하세요. 지금 로그인한 계정 값이 그대로 들어가 있습니다.</p>
+    <pre></pre>
+    <button class="btn btn-soft btn-sm" id="diagFixCopy"><i class="fa-regular fa-copy"></i> SQL 복사</button>
+  </div>
+
   <pre class="diag-raw hidden" id="diagRaw"></pre>
   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
     <button class="btn btn-soft btn-sm" id="diagRefresh"><i class="fa-solid fa-rotate"></i> 다시 확인</button>

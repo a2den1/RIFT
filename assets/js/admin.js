@@ -19,6 +19,15 @@
   document.getElementById('diagRaw2').addEventListener('click', () =>
     document.getElementById('diagRaw').classList.toggle('hidden')
   );
+  document.getElementById('diagFixCopy').addEventListener('click', async () => {
+    const sql = document.querySelector('#diagFix pre').textContent;
+    try {
+      await navigator.clipboard.writeText(sql);
+      toast('SQL 을 복사했습니다.');
+    } catch {
+      toast('복사에 실패했습니다. 직접 선택해 복사해 주세요.');
+    }
+  });
 
   if (!RIFT.connected) {
     denied.classList.remove('hidden');
@@ -79,7 +88,18 @@
     raw.textContent = '';
 
     if (!RIFT.user) {
-      rows.innerHTML = line(false, '로그인', '디스코드로 로그인해야 권한을 확인할 수 있습니다');
+      rows.innerHTML =
+        line(false, '로그인', '디스코드로 로그인해야 권한을 확인할 수 있습니다') +
+        `<div class="row-item"><span class="ok-dot"><i class="fa-brands fa-discord"></i></span>
+           <div class="grow"><b>여기서 바로 로그인</b><small>로그인하면 계정 이름과 관리자 판정이 표시됩니다</small></div>
+           <button class="btn btn-discord btn-sm" id="diagLogin">로그인</button></div>`;
+      document.getElementById('diagLogin').addEventListener('click', async () => {
+        try {
+          await RIFT.signInDiscord();
+        } catch (e) {
+          toast('로그인 실패: ' + e.message);
+        }
+      });
       return null;
     }
 
@@ -89,14 +109,41 @@
       return null;
     }
 
+    // admins 테이블에 실제로 무엇이 들어 있는지도 같이 보여줍니다.
+    const { data: adminRows } = await sb.from('admins').select('discord_username,discord_id');
+    const listed = (adminRows || [])
+      .map((r) => `${r.discord_username}${r.discord_id ? ' / ' + r.discord_id : ''}`)
+      .join(', ');
+
     rows.innerHTML =
       line(!!data.username, 'DB가 읽은 사용자명', data.username || '(비어 있음 — JWT에 사용자명이 없습니다)') +
-      line(!!data.username, '비교에 쓰이는 값', data.normalized || '—') +
+      line(!!data.username, '비교에 쓰이는 값', data.normalized || '(비어 있음)') +
       line(!!data.discord_id, '디스코드 ID', data.discord_id || '(없음)') +
-      line(data.is_admin, 'DB 관리자 판정', data.is_admin ? '통과 — 등록·삭제가 가능합니다' : 'admins 테이블에 일치하는 행이 없습니다') +
-      line(data.jwt_role === 'authenticated', 'JWT 역할', data.jwt_role || '(없음)');
+      line(!!adminRows, 'admins 테이블 내용', listed || '(비어 있거나 읽을 수 없음)') +
+      line(data.is_admin, 'DB 관리자 판정', data.is_admin ? '통과 — 등록·삭제가 가능합니다' : '위 두 값이 admins 테이블과 일치하지 않습니다') +
+      line(data.jwt_role === 'authenticated', 'JWT 역할', data.jwt_role || '(없음)') +
+      line(!!RIFT.isAdmin, '헤더 관리자 탭', RIFT.isAdmin ? '표시됨' : '표시되지 않음');
 
-    raw.textContent = JSON.stringify(data, null, 2);
+    // 권한이 없으면 이 계정을 그대로 등록하는 SQL 을 만들어 줍니다.
+    const fixBox = document.getElementById('diagFix');
+    if (!data.is_admin) {
+      const uname = (data.username || '').replace(/'/g, "''");
+      const did = (data.discord_id || '').replace(/'/g, "''");
+      fixBox.classList.remove('hidden');
+      fixBox.querySelector('pre').textContent =
+        `insert into public.admins (discord_username, discord_id)\n` +
+        `values ('${uname}', ${did ? `'${did}'` : 'null'})\n` +
+        `on conflict (discord_username) do update set discord_id = excluded.discord_id;\n\n` +
+        `notify pgrst, 'reload schema';`;
+    } else {
+      fixBox.classList.add('hidden');
+    }
+
+    raw.textContent = JSON.stringify(
+      { whoami: data, admins: adminRows, browser: { user: !!RIFT.user, isAdmin: RIFT.isAdmin, name: RIFT.discordName } },
+      null,
+      2
+    );
     return data;
   }
 
@@ -120,6 +167,12 @@
       ? `${who.username || '이 계정'} 에는 관리자 권한이 없습니다. 아래 점검 결과를 확인하세요.`
       : `계정 확인에 실패했습니다. 아래 점검 결과를 확인하세요.`;
     return;
+  }
+
+  // DB 가 관리자로 인정했는데 헤더에 탭이 없다면 여기서 맞춰 줍니다.
+  if (!RIFT.isAdmin) {
+    RIFT.isAdmin = true;
+    window.refreshAuthUI && window.refreshAuthUI();
   }
 
   panel.classList.remove('hidden');

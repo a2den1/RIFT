@@ -550,6 +550,14 @@ main{animation:pageIn .28s var(--ease) both}
   border-radius:7px;font-size:11px;flex-shrink:0}
 .ok-dot{background:rgba(52,199,89,.18);color:var(--ok)}
 .no-dot{background:rgba(255,107,107,.18);color:#ff6b6b}
+.diag-fix{margin-top:16px;padding:18px 20px;border-radius:var(--r);background:var(--pri-soft)}
+.diag-fix b{font-family:'Paperlogy',sans-serif;font-size:15px}
+.diag-fix p{margin-top:4px;font-size:14px;color:var(--txt-2)}
+.diag-fix pre{
+  margin:12px 0;padding:14px 16px;border-radius:12px;background:var(--bg);color:var(--txt);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;
+  white-space:pre-wrap;word-break:break-all;user-select:all;
+}
 /* 이미지 교체 */
 .img-slots{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .img-slot{display:flex;gap:14px;padding:12px;border-radius:14px;background:var(--surface-2)}

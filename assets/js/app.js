@@ -222,6 +222,8 @@ function initToast() {
 /* =========================================================
    로그인 상태
    ========================================================= */
+window.refreshAuthUI = () => initAuthUI();
+
 function initAuthUI() {
   const slot = $('#authSlot');
   const nav = $('#nav');
