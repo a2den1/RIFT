@@ -56,9 +56,11 @@
   async function checkTables() {
     const box = document.getElementById('diagTables');
     box.innerHTML = '<div class="empty">확인 중…</div>';
+    // head:true 로 조회하면 응답 본문이 없어 404 오류가 그대로 묻힙니다.
+    // 없는 테이블도 정상으로 보이므로 반드시 일반 select 로 확인해야 합니다.
     const results = await Promise.all(
       NEEDED.map(async ([t, file]) => {
-        const { error } = await sb.from(t).select('*', { head: true, count: 'exact' }).limit(1);
+        const { error } = await sb.from(t).select('*').limit(1);
         return { t, file, ok: !error, msg: error?.message || '' };
       })
     );
