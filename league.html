@@ -69,17 +69,12 @@
 <section class="section">
   <div class="s-head">
     <h2>구단 순위</h2>
-    <p>구단 이름에 마우스를 올리면 상세 정보가 표시됩니다.</p>
+    <p>구단 이름에 마우스를 올리면 상세 정보가 표시됩니다. 열 제목을 누르면 그 기준으로 정렬됩니다.</p>
   </div>
   <div class="tbl-card">
     <div class="tbl-scroll">
       <table class="tbl" style="min-width:740px">
-        <thead>
-          <tr>
-            <th class="c">순위</th><th>구단</th><th class="c">경기</th><th class="c">승</th>
-            <th class="c">패</th><th class="c">세트 득실</th><th>인지도</th><th class="c">우승</th>
-          </tr>
-        </thead>
+        <thead><tr id="standingsHead"></tr></thead>
         <tbody id="standings"></tbody>
       </table>
     </div>

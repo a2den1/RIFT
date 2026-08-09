@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else countUp(on, RIFT.onlineCount);
   }
 
+  if (applyTabLock()) return; // 막힌 탭이면 본문을 대체하고 나머지 렌더링은 생략
+
+  $$('[data-img]').forEach((el) => (el.src = RIFT.image(el.dataset.img)));
+  renderJobs();
   renderNews();
   renderEvents();
   renderClubTable();
@@ -76,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderRanking();
   initGuide();
   initHoverCard();
+  initPills();
 
   $$('[data-plan]').forEach((b) =>
     b.addEventListener('click', () => toast(`${b.dataset.plan} 후원 문의는 디스코드에서 받습니다.`))
@@ -100,6 +105,8 @@ function initHeader() {
     toggle.addEventListener('click', () => {
       const open = nav.classList.toggle('open');
       toggle.innerHTML = `<i class="fa-solid fa-${open ? 'xmark' : 'bars'}"></i>`;
+      // 메뉴가 열린 뒤에야 링크 위치가 잡히므로 움직이는 배경을 다시 계산합니다.
+      if (open && nav._pill) requestAnimationFrame(nav._pill.toActive);
     });
   }
   const here = location.pathname.split('/').pop() || 'index.html';
@@ -166,8 +173,79 @@ function initAuthUI() {
 }
 
 /* =========================================================
+   탭 잠금
+   관리자는 잠긴 탭도 볼 수 있고, 상단에 안내 띠만 표시됩니다.
+   ========================================================= */
+function applyTabLock() {
+  const page = (location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '');
+
+  // 잠긴 탭은 내비에 자물쇠를 붙입니다.
+  RIFT.locks
+    .filter((l) => l.locked)
+    .forEach((l) => {
+      const a = $(`#nav a[href="${l.page}.html"]`);
+      if (a && !$('.lock-mark', a)) {
+        a.classList.add('locked');
+        a.insertAdjacentHTML('beforeend', ' <i class="fa-solid fa-lock lock-mark"></i>');
+      }
+    });
+
+  const lock = RIFT.lockOf(page);
+  if (!lock) return false;
+
+  if (RIFT.isAdmin) {
+    const main = $('main');
+    main?.insertAdjacentHTML(
+      'afterbegin',
+      `<div class="wrap" style="padding-top:calc(var(--header-h) + 24px)">
+         <div class="banner"><i class="fa-solid fa-lock"></i>
+           <div><b>이 탭은 현재 막혀 있습니다</b>
+           <p>${lock.reason ? escapeHtml(lock.reason) : '사유가 등록되지 않았습니다.'} — 관리자에게만 보입니다.</p></div>
+         </div>
+       </div>`
+    );
+    return false;
+  }
+
+  const main = $('main');
+  if (main) {
+    main.className = 'wrap';
+    main.innerHTML = `
+      <div class="locked-page">
+        <div class="lock-ic"><i class="fa-solid fa-lock"></i></div>
+        <h1>탭이 막혀있습니다</h1>
+        <p class="lock-reason">${lock.reason ? escapeHtml(lock.reason) : '사유가 등록되지 않았습니다.'}</p>
+        <a href="index.html" class="btn btn-primary">홈으로</a>
+      </div>`;
+  }
+  return true;
+}
+
+const escapeHtml = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* =========================================================
    소식 · 이벤트
    ========================================================= */
+const JOBS = [
+  ['공격수', 'job_attack', '전선을 뚫고 상대를 압박합니다.'],
+  ['탱커', 'job_tank', '거점을 지키고 피해를 받아냅니다.'],
+  ['원거리', 'job_range', '거리를 두고 피해를 누적시킵니다.'],
+  ['서포터', 'job_support', '아군을 회복하고 강화합니다.'],
+];
+
+function renderJobs() {
+  const box = $('#jobs');
+  if (!box) return;
+  box.innerHTML = JOBS.map(
+    ([name, key, desc]) => `
+    <div class="job">
+      <div class="job-media"><img class="shot" src="${RIFT.image(key)}" alt="${name}"></div>
+      <div class="job-body"><h3>${name}</h3><p>${desc}</p></div>
+    </div>`
+  ).join('');
+}
+
 function renderNews() {
   const box = $('#news');
   if (!box) return;
@@ -177,7 +255,7 @@ function renderNews() {
     .map(
       (n) => `
       <article class="news-item">
-        <div class="news-media"><img class="shot" src="${n.image_url || CFG.images.news}" alt=""></div>
+        <div class="news-media"><img class="shot" src="${n.image_url || RIFT.image('news')}" alt=""></div>
         <div class="news-body">
           <div class="news-tag"><b>공지</b> <span>${dateOnly(n.created_at)}</span></div>
           <h3>${n.title}</h3>
@@ -210,31 +288,91 @@ function renderEvents() {
    ========================================================= */
 const emptyRow = (cols, msg) => `<tr><td class="empty" colspan="${cols}">${msg}</td></tr>`;
 
+/* =========================================================
+   정렬 가능한 표
+   헤더를 누르면 그 열 기준으로 다시 정렬합니다.
+   숫자 열은 큰 값부터, 글자 열은 가나다순으로 시작합니다.
+   ========================================================= */
+function sortableTable({ head, body, lead, cols, rows, defaultKey, rowHtml }) {
+  let key = defaultKey;
+  let dir = 'desc';
+  const val = (r, c) => (c.get ? c.get(r) : r[c.k]);
+
+  function paint() {
+    const col = cols.find((c) => c.k === key);
+    const sorted = col
+      ? [...rows].sort((a, b) => {
+          const x = val(a, col), y = val(b, col);
+          if (typeof x === 'number' && typeof y === 'number') return dir === 'desc' ? y - x : x - y;
+          return (dir === 'desc' ? -1 : 1) * String(x ?? '').localeCompare(String(y ?? ''), 'ko');
+        })
+      : rows;
+
+    head.innerHTML =
+      lead.map((l, i) => `<th class="${i === lead.length - 1 ? '' : 'c'}">${l}</th>`).join('') +
+      cols
+        .map((c) => {
+          const on = c.k === key;
+          const icon = on ? (dir === 'desc' ? 'arrow-down-wide-short' : 'arrow-up-short-wide') : 'sort';
+          return `<th class="c sortable${on ? ' sorted' : ''}" data-sort="${c.k}"
+            title="${c.label} 기준 정렬" role="button" tabindex="0">${c.label}<i class="fa-solid fa-${icon}"></i></th>`;
+        })
+        .join('');
+
+    body.innerHTML = sorted.map((r, i) => rowHtml(r, i, key === defaultKey && dir === 'desc')).join('');
+  }
+
+  head.addEventListener('click', (e) => {
+    const th = e.target.closest('[data-sort]');
+    if (!th) return;
+    const c = cols.find((x) => x.k === th.dataset.sort);
+    if (key === c.k) dir = dir === 'desc' ? 'asc' : 'desc';
+    else {
+      key = c.k;
+      dir = c.num ? 'desc' : 'asc';
+    }
+    paint();
+  });
+  head.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.target.closest('[data-sort]')?.click();
+    }
+  });
+
+  paint();
+  return { repaint: paint, reset: () => { key = defaultKey; dir = 'desc'; paint(); } };
+}
+
 function renderClubTable() {
-  const tb = $('#standings');
-  if (!tb) return;
-  if (!RIFT.clubs.length) return void (tb.innerHTML = emptyRow(8, '등록된 구단이 없습니다.'));
+  const body = $('#standings');
+  const head = $('#standingsHead');
+  if (!body || !head) return;
+  if (!RIFT.clubs.length) return void (body.innerHTML = emptyRow(8, '등록된 구단이 없습니다.'));
+
+  const cols = RIFT.clubCols();
   const max = Math.max(...RIFT.clubs.map((c) => c.reputation || 0), 1);
-  tb.innerHTML = RIFT.clubs
-    .map(
-      (c, i) => `
+
+  const cell = (c, col) => {
+    if (col.bar)
+      return `<td><div class="bar-cell">
+          <div class="bar"><i style="width:${Math.round(((c.reputation || 0) / max) * 100)}%"></i></div>
+          <span class="val">${nf(c.reputation)}</span></div></td>`;
+    if (col.k === 'titles')
+      return `<td class="c">${c.titles > 0 ? `<span class="chip"><i class="fa-solid fa-trophy"></i> ${c.titles}</span>` : '<span class="muted">—</span>'}</td>`;
+    const raw = col.raw ? col.raw(c) : c[col.k];
+    return `<td class="c ${col.k === 'wins' ? 'val' : 'muted'}">${nf(raw)}</td>`;
+  };
+
+  sortableTable({
+    head, body, lead: ['순위', '구단'], cols, rows: RIFT.clubs, defaultKey: 'wins',
+    rowHtml: (c, i, def) => `
       <tr data-club="${c.name}">
-        <td class="c">${medal(i)}</td>
+        <td class="c">${def ? medal(i) : `<span class="medal">${i + 1}</span>`}</td>
         <td><span class="name">${c.name}</span></td>
-        <td class="c muted">${nf(c.games)}</td>
-        <td class="c val">${nf(c.wins)}</td>
-        <td class="c muted">${nf(c.losses)}</td>
-        <td class="c">${c.set_diff ?? '—'}</td>
-        <td>
-          <div class="bar-cell">
-            <div class="bar"><i style="width:${Math.round(((c.reputation || 0) / max) * 100)}%"></i></div>
-            <span class="val">${nf(c.reputation)}</span>
-          </div>
-        </td>
-        <td class="c">${c.titles > 0 ? `<span class="chip"><i class="fa-solid fa-trophy"></i> ${c.titles}</span>` : '<span class="muted">—</span>'}</td>
-      </tr>`
-    )
-    .join('');
+        ${cols.map((col) => cell(c, col)).join('')}
+      </tr>`,
+  });
 }
 
 /* =========================================================
@@ -249,7 +387,7 @@ function renderMatches() {
       const w = when(m.starts_at);
       return `
       <article class="match">
-        <div class="match-media"><img class="shot" src="${m.image_url || CFG.images.match}" alt=""></div>
+        <div class="match-media"><img class="shot" src="${m.image_url || RIFT.image('match')}" alt=""></div>
         <div class="match-fade">
           <div class="match-when"><span class="match-time">${w.time}</span><span class="match-day">${w.date}</span></div>
           <div class="match-teams">
@@ -314,45 +452,51 @@ function renderRanking() {
   const thead = $('#rankHead');
   const tbody = $('#rankBody');
 
+  // 시상대는 그 랭킹의 대표 지표(킬 랭킹이면 킬) 기준을 유지합니다.
+  // 표 정렬을 바꿔도 시상대는 흔들리지 않습니다.
+  function drawPodium(rows, sub, valText) {
+    podium.innerHTML = [1, 0, 2]
+      .map((i) => {
+        const r = rows[i];
+        if (!r) return '';
+        const face = r.__club
+          ? `<div class="pod-av pod-emblem"><i class="fa-solid fa-shield-halved"></i></div>`
+          : skinHead(r.name, i === 0 ? 38 : 29, 'pod-av');
+        const attr = r.__club ? `data-club="${r.name}"` : `data-player="${r.name}"`;
+        return `
+        <div class="pod p${i + 1}" ${attr}>
+          <div class="pod-crown"><i class="fa-solid fa-crown"></i></div>
+          ${face}
+          <div class="pod-name">${r.name}</div>
+          <div class="pod-sub">${sub(r)}</div>
+          <div class="pod-val">${valText(r)}</div>
+          <div class="pod-block"><span class="pod-rank">${i + 1}</span></div>
+        </div>`;
+      })
+      .join('');
+  }
+
   function drawClub() {
-    const rows = RIFT.clubs;
+    const rows = RIFT.clubs.map((c) => Object.assign({ __club: true }, c));
     if (!rows.length) {
       podium.innerHTML = '';
       thead.innerHTML = '';
       tbody.innerHTML = emptyRow(1, '등록된 구단이 없습니다.');
       return;
     }
-    podium.innerHTML = [1, 0, 2]
-      .map((i) => {
-        const c = rows[i];
-        if (!c) return '';
-        return `
-        <div class="pod p${i + 1}" data-club="${c.name}">
-          <div class="pod-crown"><i class="fa-solid fa-crown"></i></div>
-          <div class="pod-av pod-emblem"><i class="fa-solid fa-shield-halved"></i></div>
-          <div class="pod-name">${c.name}</div>
-          <div class="pod-sub">${c.wins}승 ${c.losses}패</div>
-          <div class="pod-val">${nf(c.reputation)} 인지도</div>
-          <div class="pod-block"><span class="pod-rank">${i + 1}</span></div>
-        </div>`;
-      })
-      .join('');
-    thead.innerHTML = ['순위', '구단', '승', '패', '인지도', '역대 우승']
-      .map((c, i) => `<th class="${i === 1 ? '' : 'c'}">${c}</th>`)
-      .join('');
-    tbody.innerHTML = rows
-      .map(
-        (c, i) => `
+    drawPodium(rows, (c) => `${c.wins}승 ${c.losses}패`, (c) => `${nf(c.reputation)} 인지도`);
+
+    // 시상대 아래 표에서는 인지도를 막대 없이 숫자로만 보여줍니다.
+    const cols = RIFT.clubCols().map((c) => (c.bar ? { k: c.k, label: c.label, num: true } : c));
+    sortableTable({
+      head: thead, body: tbody, lead: ['순위', '구단'], cols, rows, defaultKey: 'wins',
+      rowHtml: (c, i, def) => `
         <tr data-club="${c.name}">
-          <td class="c">${medal(i)}</td>
+          <td class="c">${def ? medal(i) : `<span class="medal">${i + 1}</span>`}</td>
           <td><span class="name">${c.name}</span></td>
-          <td class="c val">${c.wins}</td>
-          <td class="c muted">${c.losses}</td>
-          <td class="c val">${nf(c.reputation)}</td>
-          <td class="c">${c.titles || 0}회</td>
-        </tr>`
-      )
-      .join('');
+          ${cols.map((col) => `<td class="c ${col.k === 'wins' ? 'val' : 'muted'}">${nf(col.raw ? col.raw(c) : c[col.k])}</td>`).join('')}
+        </tr>`,
+    });
   }
 
   function draw(key) {
@@ -365,35 +509,23 @@ function renderRanking() {
       tbody.innerHTML = emptyRow(1, `${b.label} 기록이 아직 없습니다.`);
       return;
     }
+    drawPodium(rows, (p) => p.job, (p) => `${nf(p[b.key])} ${b.unit}`);
 
-    podium.innerHTML = [1, 0, 2]
-      .map((i) => {
-        const p = rows[i];
-        if (!p) return '';
-        return `
-        <div class="pod p${i + 1}" data-player="${p.name}">
-          <div class="pod-crown"><i class="fa-solid fa-crown"></i></div>
-          ${skinHead(p.name, i === 0 ? 38 : 29, 'pod-av')}
-          <div class="pod-name">${p.name}</div>
-          <div class="pod-sub">${p.job}</div>
-          <div class="pod-val">${nf(p[b.key])} ${b.unit}</div>
-          <div class="pod-block"><span class="pod-rank">${i + 1}</span></div>
-        </div>`;
-      })
-      .join('');
-
-    thead.innerHTML = b.cols.map((c, i) => `<th class="${i === 1 ? '' : 'c'}">${c}</th>`).join('');
-    tbody.innerHTML = rows
-      .map(
-        (p, i) => `
+    sortableTable({
+      head: thead, body: tbody, lead: ['순위', '플레이어'], cols: b.cols, rows, defaultKey: b.key,
+      rowHtml: (p, i, def) => `
         <tr data-player="${p.name}">
-          <td class="c">${medal(i)}</td>
+          <td class="c">${def ? medal(i) : `<span class="medal">${i + 1}</span>`}</td>
           <td><div class="who">${skinHead(p.name)}<span class="name">${p.name}</span></div></td>
-          <td class="c"><span class="chip">${p.job}</span></td>
-          ${b.row(p).map((v, j) => `<td class="c ${j === 0 ? 'val' : 'muted'}">${nf(v)}</td>`).join('')}
-        </tr>`
-      )
-      .join('');
+          ${b.cols
+            .map((col) => {
+              const v = col.get ? col.get(p) : p[col.k];
+              if (col.chip) return `<td class="c"><span class="chip">${v}</span></td>`;
+              return `<td class="c ${col.k === b.key ? 'val' : 'muted'}">${nf(v)}</td>`;
+            })
+            .join('')}
+        </tr>`,
+    });
   }
 
   draw($('.active', seg).dataset.rank);
@@ -512,18 +644,153 @@ function initHoverCard() {
    ========================================================= */
 function initGuide() {
   const toc = $('#toc');
-  if (!toc) return;
+  const doc = $('.doc');
+  if (!toc || !doc) return;
+
+  /* ---------- 접고 펼치는 섹션 ---------- */
+  const kids = [...doc.children];
+  let body = null;
+  kids.forEach((el) => {
+    if (el.tagName === 'H2') {
+      const sec = document.createElement('section');
+      sec.className = 'doc-sec open';
+      doc.append(sec);
+
+      const label = el.textContent;
+      el.textContent = '';
+      const btn = document.createElement('button');
+      btn.className = 'doc-toggle';
+      btn.setAttribute('aria-expanded', 'true');
+      btn.innerHTML = `<i class="fa-solid fa-chevron-down"></i><span>${label}</span>`;
+      el.append(btn);
+      sec.append(el);
+
+      body = document.createElement('div');
+      body.className = 'doc-body';
+      const inner = document.createElement('div');
+      body.append(inner);
+      sec.append(body);
+      body = inner;
+
+      btn.addEventListener('click', () => {
+        const open = sec.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+      });
+    } else if (body) {
+      body.append(el);
+    }
+  });
+
+  const secs = $$('.doc-sec', doc);
+  const setAll = (open) =>
+    secs.forEach((s) => {
+      s.classList.toggle('open', open);
+      $('.doc-toggle', s).setAttribute('aria-expanded', String(open));
+    });
+
+  const bar = document.createElement('div');
+  bar.className = 'doc-bar';
+  bar.innerHTML = `<button class="btn btn-soft btn-sm" id="docToggleAll"><i class="fa-solid fa-chevron-up"></i> 모두 접기</button>`;
+  doc.prepend(bar);
+  let allOpen = true;
+  $('#docToggleAll').addEventListener('click', (e) => {
+    allOpen = !allOpen;
+    setAll(allOpen);
+    e.currentTarget.innerHTML = allOpen
+      ? '<i class="fa-solid fa-chevron-up"></i> 모두 접기'
+      : '<i class="fa-solid fa-chevron-down"></i> 모두 펼치기';
+  });
+
+  /* ---------- 목차 ---------- */
   const links = $$('a', toc).concat($$('#tocMobile a'));
   const targets = [...new Set(links.map((a) => $(a.getAttribute('href'))).filter(Boolean))];
-  const mark = (id) => links.forEach((a) => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+
+  // 접힌 섹션 안의 항목을 누르면 먼저 펼칩니다.
+  links.forEach((a) =>
+    a.addEventListener('click', () => {
+      const t = $(a.getAttribute('href'));
+      const sec = t && t.closest('.doc-sec');
+      if (sec && !sec.classList.contains('open')) {
+        sec.classList.add('open');
+        $('.doc-toggle', sec).setAttribute('aria-expanded', 'true');
+        setTimeout(() => t.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      }
+    })
+  );
+
+  const mark = (id) => {
+    links.forEach((a) => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+    toc._pill && toc._pill.toActive();
+  };
   const sweep = () => {
     let cur = targets[0];
-    for (const t of targets) if (t.getBoundingClientRect().top - 140 <= 0) cur = t;
+    for (const t of targets) {
+      if (!t.offsetParent && t.tagName !== 'H2') continue; // 접힌 섹션 내부는 건너뜀
+      if (t.getBoundingClientRect().top - 140 <= 0) cur = t;
+    }
     if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = targets[targets.length - 1];
     if (cur) mark(cur.id);
   };
   sweep();
   addEventListener('scroll', sweep, { passive: true });
+}
+
+/* =========================================================
+   움직이는 배경 — 호버/선택에 따라 배경 하나가 미끄러져 이동합니다.
+   항목마다 배경이 켜졌다 꺼지는 방식 대신 사용합니다.
+   ========================================================= */
+function initPills() {
+  const setup = (box, itemSel, mode) => {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    box.prepend(pill);
+
+    const move = (el) => {
+      if (!el) return void (pill.style.opacity = '0');
+      const b = box.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      if (!r.width) return void (pill.style.opacity = '0');
+      pill.style.width = r.width + 'px';
+      pill.style.height = r.height + 'px';
+      pill.style.transform = `translate(${r.left - b.left + box.scrollLeft}px, ${r.top - b.top + box.scrollTop}px)`;
+      pill.style.opacity = '1';
+    };
+    // itemSel 이 "button, a" 처럼 여러 개일 수 있어 각각에 상태 클래스를 붙여야 합니다.
+    const activeSel = itemSel
+      .split(',')
+      .map((s) => s.trim())
+      .flatMap((s) => [s + '.active', s + '.current'])
+      .join(',');
+    const toActive = () => move($(activeSel, box));
+
+    box._pill = { move, toActive };
+
+    if (mode === 'nav') {
+      // 누른 항목으로 배경이 미끄러진 뒤 이동합니다. (호버로는 움직이지 않습니다)
+      $$(itemSel, box).forEach((el) =>
+        el.addEventListener('click', (e) => {
+          const href = el.getAttribute('href');
+          move(el);
+          if (!href || href.startsWith('#') || e.metaKey || e.ctrlKey || e.shiftKey) return;
+          e.preventDefault();
+          setTimeout(() => (location.href = el.href), 240);
+        })
+      );
+    } else if (mode === 'tabs') {
+      // 탭 전환은 페이지 이동이 없으므로 활성 항목만 따라갑니다.
+      box.addEventListener('click', () => setTimeout(toActive, 0));
+    }
+    box.addEventListener('scroll', toActive, { passive: true });
+    addEventListener('resize', toActive);
+    document.fonts && document.fonts.ready.then(toActive);
+    requestAnimationFrame(toActive);
+  };
+
+  const nav = $('#nav');
+  if (nav) setup(nav, 'a', 'nav');
+  $$('.seg').forEach((s) => setup(s, 'button, a', 'tabs'));
+  const toc = $('#toc');
+  if (toc) setup(toc, 'a', 'active');
 }
 
 /* =========================================================

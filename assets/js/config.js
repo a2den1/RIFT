@@ -22,18 +22,37 @@ window.RIFT_CONFIG = {
   bootstrapAdmin: '_a2den.',
 
   /* ---------- 이미지 ----------
-     assets/img/shots 안의 파일을 실제 스크린샷으로 바꾸고 경로만 고치면 됩니다. */
+     기본값입니다. 관리자 페이지에서 바꾸면 Supabase 값이 우선합니다.
+     assets/img/shots 안의 파일을 실제 스크린샷으로 교체해도 됩니다. */
   images: {
     wild: 'assets/img/shots/wild.svg',
     league: 'assets/img/shots/league.svg',
-    club: 'assets/img/shots/club.svg',
     news: 'assets/img/shots/news.svg',
     match: 'assets/img/shots/match.svg',
-    jobs: {
-      공격수: 'assets/img/shots/job-attack.svg',
-      탱커: 'assets/img/shots/job-tank.svg',
-      원거리: 'assets/img/shots/job-range.svg',
-      서포터: 'assets/img/shots/job-support.svg',
-    },
+    job_attack: 'assets/img/shots/job-attack.svg',
+    job_tank: 'assets/img/shots/job-tank.svg',
+    job_range: 'assets/img/shots/job-range.svg',
+    job_support: 'assets/img/shots/job-support.svg',
   },
+
+  // 관리자 페이지에 표시할 이미지 목록
+  imageSlots: [
+    { key: 'wild', label: '홈 · 야생 블록', size: '1600×900' },
+    { key: 'league', label: '홈 · 리그 블록', size: '1600×900' },
+    { key: 'news', label: '공지 기본 이미지', size: '1200×675' },
+    { key: 'match', label: '경기 기본 이미지', size: '1200×900' },
+    { key: 'job_attack', label: '직업 · 공격수', size: '800×600' },
+    { key: 'job_tank', label: '직업 · 탱커', size: '800×600' },
+    { key: 'job_range', label: '직업 · 원거리', size: '800×600' },
+    { key: 'job_support', label: '직업 · 서포터', size: '800×600' },
+  ],
+
+  // 잠글 수 있는 탭
+  tabs: [
+    { page: 'play', label: '서버 접속' },
+    { page: 'guide', label: '도움말' },
+    { page: 'league', label: '공식 리그' },
+    { page: 'ranking', label: '랭킹' },
+    { page: 'support', label: '후원' },
+  ],
 };

@@ -19,19 +19,28 @@
     matches: [],
     players: [],
     admins: [],
+    images: Object.assign({}, CFG.images),
+    locks: [],
     user: null,
     isAdmin: false,
     ready: null,
   };
 
+  store.image = (key) => store.images[key] || CFG.images[key] || '';
+  store.lockOf = (page) => store.locks.find((l) => l.page === page && l.locked) || null;
+
   /* ---------- 로그인 ---------- */
-  // 디스코드 신규 계정은 구분자가 0 이라 `_a2den.#0` 형태로 옵니다. 표시와 비교 모두 `#0` 을 떼고 씁니다.
+  // 디스코드 신규 계정은 구분자가 0 이라 `_a2den.#0` 형태로 옵니다.
+  // 비교는 SQL 의 norm_discord() 와 동일하게 소문자 + `#0` 제거로 맞춥니다.
   const stripTag = (s) => (s || '').replace(/#0$/, '');
+  const norm = (s) => stripTag(String(s || '').toLowerCase());
 
   function discordName(user) {
     if (!user) return null;
     const m = user.user_metadata || {};
-    const raw = m.preferred_username || m.user_name || m.name || m.full_name || null;
+    const raw =
+      m.preferred_username || m.user_name || m.name || m.full_name ||
+      (m.custom_claims && m.custom_claims.global_name) || null;
     return raw ? stripTag(raw) : null;
   }
 
@@ -70,11 +79,20 @@
       store.user = data.session?.user || null;
       if (store.user) {
         const name = discordName(store.user);
-        const { data: rows } = await sb.from('admins').select('discord_username');
-        store.admins = rows || [];
-        store.isAdmin =
-          (rows || []).some((r) => stripTag(r.discord_username) === name) ||
-          name === stripTag(CFG.bootstrapAdmin);
+        // RLS 와 같은 기준으로 판단하도록 DB 의 is_admin() 결과를 그대로 씁니다.
+        // 화면에서는 관리자인데 저장은 막히는(또는 그 반대) 상황을 없애기 위함입니다.
+        const { data: who, error } = await sb.rpc('whoami');
+        if (!error && who) {
+          store.whoami = who;
+          store.isAdmin = !!who.is_admin;
+        } else {
+          // whoami() 가 없는 예전 스키마 대비 — 클라이언트에서 같은 규칙으로 대조
+          const { data: rows } = await sb.from('admins').select('discord_username');
+          store.admins = rows || [];
+          store.isAdmin =
+            (rows || []).some((r) => norm(r.discord_username) === norm(name)) ||
+            norm(name) === norm(CFG.bootstrapAdmin);
+        }
       }
     }
 
@@ -93,6 +111,14 @@
       store.onlineCount = null;
       const { data } = await sb.from('server_status').select('online_count').limit(1);
       if (data && data.length) store.onlineCount = data[0].online_count;
+
+      // 관리자가 바꾼 이미지와 탭 잠금 상태
+      const [{ data: imgs }, { data: locks }] = await Promise.all([
+        sb.from('site_images').select('key,url'),
+        sb.from('tab_locks').select('page,locked,reason'),
+      ]);
+      (imgs || []).forEach((r) => r.url && (store.images[r.key] = r.url));
+      store.locks = locks || [];
     }
 
     // 순위표는 승수 → 세트득실 순으로 정렬
@@ -100,29 +126,39 @@
     store.discordName = discordName(store.user);
   })();
 
-  /* ---------- 랭킹 정의 ---------- */
+  /* ---------- 랭킹 정의 ----------
+     cols 의 각 항목은 정렬 가능한 열입니다.
+     k: 정렬 키, get: 값 계산(없으면 p[k]), num: 숫자 열, chip: 칩 모양으로 표시 */
+  const KD = { k: 'kd', label: 'K/D', num: true, get: (p) => +(p.kills / Math.max(p.deaths, 1)).toFixed(2) };
+  const JOB = { k: 'job', label: '직업', chip: true };
+
   store.boards = () => ({
     kill: {
       label: 'PVP 킬', unit: '킬', key: 'kills',
-      cols: ['순위', '플레이어', '직업', '킬', '데스', 'K/D'],
-      row: (p) => [p.kills, p.deaths, (p.kills / Math.max(p.deaths, 1)).toFixed(2)],
+      cols: [JOB, { k: 'kills', label: '킬', num: true }, { k: 'deaths', label: '데스', num: true }, KD],
     },
     time: {
       label: '플레이타임', unit: '시간', key: 'playtime',
-      cols: ['순위', '플레이어', '직업', '플레이타임 (시간)'],
-      row: (p) => [p.playtime],
+      cols: [JOB, { k: 'playtime', label: '플레이타임 (시간)', num: true }],
     },
     money: {
       label: '게임머니', unit: '원', key: 'money',
-      cols: ['순위', '플레이어', '직업', '보유 게임머니'],
-      row: (p) => [p.money],
+      cols: [JOB, { k: 'money', label: '보유 게임머니', num: true }],
     },
     bounty: {
       label: '현상금', unit: '원', key: 'bounty',
-      cols: ['순위', '플레이어', '직업', '누적 현상금'],
-      row: (p) => [p.bounty],
+      cols: [JOB, { k: 'bounty', label: '누적 현상금', num: true }],
     },
   });
+
+  store.clubCols = () => [
+    { k: 'games', label: '경기', num: true },
+    { k: 'wins', label: '승', num: true },
+    { k: 'losses', label: '패', num: true },
+    { k: 'set_diff', label: '세트 득실', get: (c) => parseInt(c.set_diff, 10) || 0, num: true, raw: (c) => c.set_diff ?? '—' },
+    { k: 'reputation', label: '인지도', num: true, bar: true },
+    { k: 'titles', label: '우승', num: true },
+  ];
 
   store.sorted = (key) => [...store.players].filter((p) => p[key] > 0).sort((a, b) => b[key] - a[key]);
   store.player = (name) => store.players.find((p) => p.name === name);

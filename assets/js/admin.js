@@ -154,4 +154,98 @@
   });
 
   Object.keys(LABEL).forEach(refresh);
+
+  /* =========================================================
+     이미지 교체
+     ========================================================= */
+  async function renderImages() {
+    const box = document.getElementById('imgSlots');
+    const { data, error } = await sb.from('site_images').select('key,url');
+    if (error) {
+      box.innerHTML = `<div class="empty">site_images 테이블이 없습니다. supabase/add-images-locks.sql 을 실행해 주세요.</div>`;
+      return;
+    }
+    const saved = Object.fromEntries((data || []).map((r) => [r.key, r.url]));
+    box.innerHTML = RIFT_CONFIG.imageSlots
+      .map(
+        (s) => `
+        <div class="img-slot">
+          <img src="${escapeHtml(saved[s.key] || RIFT_CONFIG.images[s.key])}" alt=""
+               onerror="this.style.opacity=.25">
+          <div class="img-info">
+            <b>${s.label}</b>
+            <small>권장 ${s.size}</small>
+            <div class="img-row">
+              <input type="url" placeholder="https://... (비우면 기본값)"
+                     value="${escapeHtml(saved[s.key] || '')}" data-img-key="${s.key}">
+              <button class="btn btn-soft btn-sm" data-img-save="${s.key}">저장</button>
+            </div>
+          </div>
+        </div>`
+      )
+      .join('');
+  }
+
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-img-save]');
+    if (!b) return;
+    const key = b.dataset.imgSave;
+    const url = document.querySelector(`[data-img-key="${key}"]`).value.trim();
+    b.disabled = true;
+    const { error } = url
+      ? await sb.from('site_images').upsert({ key, url, updated_at: new Date().toISOString() })
+      : await sb.from('site_images').delete().eq('key', key);
+    b.disabled = false;
+    if (error) return toast('저장 실패: ' + error.message);
+    toast(url ? '이미지를 바꿨습니다.' : '기본 이미지로 되돌렸습니다.');
+    renderImages();
+  });
+
+  /* =========================================================
+     탭 잠금
+     ========================================================= */
+  async function renderLocks() {
+    const box = document.getElementById('lockRows');
+    const { data, error } = await sb.from('tab_locks').select('page,locked,reason');
+    if (error) {
+      box.innerHTML = `<div class="empty">tab_locks 테이블이 없습니다. supabase/add-images-locks.sql 을 실행해 주세요.</div>`;
+      return;
+    }
+    const byPage = Object.fromEntries((data || []).map((r) => [r.page, r]));
+    box.innerHTML = RIFT_CONFIG.tabs
+      .map((t) => {
+        const r = byPage[t.page] || { locked: false, reason: '' };
+        return `
+        <div class="lock-item${r.locked ? ' on' : ''}">
+          <div class="lock-head">
+            <span class="${r.locked ? 'no-dot' : 'ok-dot'}"><i class="fa-solid fa-${r.locked ? 'lock' : 'lock-open'}"></i></span>
+            <b class="grow">${t.label}</b>
+            <button class="btn ${r.locked ? 'btn-primary' : 'btn-soft'} btn-sm" data-lock-toggle="${t.page}">
+              ${r.locked ? '잠금 해제' : '잠그기'}
+            </button>
+          </div>
+          <input placeholder="사유 (방문자에게 표시됩니다)" value="${escapeHtml(r.reason || '')}" data-lock-reason="${t.page}">
+        </div>`;
+      })
+      .join('');
+  }
+
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-lock-toggle]');
+    if (!b) return;
+    const page = b.dataset.lockToggle;
+    const reason = document.querySelector(`[data-lock-reason="${page}"]`).value.trim();
+    const locking = b.textContent.trim() === '잠그기';
+    b.disabled = true;
+    const { error } = await sb
+      .from('tab_locks')
+      .upsert({ page, locked: locking, reason: reason || null, updated_at: new Date().toISOString() });
+    b.disabled = false;
+    if (error) return toast('변경 실패: ' + error.message);
+    toast(locking ? '탭을 잠갔습니다.' : '잠금을 해제했습니다.');
+    renderLocks();
+  });
+
+  renderImages();
+  renderLocks();
 })();
