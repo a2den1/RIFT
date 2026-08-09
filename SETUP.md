@@ -22,8 +22,9 @@ Supabase를 연결하지 않아도 사이트는 `assets/js/data.js` 의 샘플 �
 2. `supabase/schema.sql` 파일 내용을 **전부 복사해서 붙여넣기**
 3. 오른쪽 아래 **Run** (또는 `Ctrl+Enter`)
 4. `Success. No rows returned` 이 나오면 성공입니다.
-5. 이어서 `supabase/add-images-locks.sql` 도 같은 방법으로 실행합니다.
-   (이미지 교체와 탭 잠금 기능에 필요합니다.)
+5. 이어서 아래 두 파일도 같은 방법으로 실행합니다.
+   - `supabase/add-images-locks.sql` — 이미지 교체, 탭 잠금
+   - `supabase/add-storage.sql` — 이미지 **파일 업로드** (Storage 버킷)
 
 이미 예전 버전으로 만들어 둔 프로젝트라면 `supabase/fix-admin.sql` 도 한 번 실행해 주세요.
 

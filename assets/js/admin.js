@@ -67,13 +67,23 @@
     const { error: fnErr } = await sb.rpc('whoami');
     const fnOk = !fnErr;
 
+    // 스토리지 버킷 — 공개 주소를 찔러 보면 버킷 유무가 메시지로 구분됩니다.
+    let bucketOk = false;
+    try {
+      const r = await fetch(`${RIFT_CONFIG.supabase.url}/storage/v1/object/public/site/__probe__`);
+      const j = await r.json().catch(() => ({}));
+      bucketOk = j.code !== 'NoSuchBucket';
+    } catch {}
+
     const missing = results.filter((r) => !r.ok);
     const files = [...new Set(missing.map((m) => m.file))];
     if (!fnOk) files.push('fix-admin.sql');
+    if (!bucketOk) files.push('add-storage.sql');
 
     box.innerHTML =
       results.map((r) => line(r.ok, `테이블 ${r.t}`, r.ok ? '있음' : `없음 — supabase/${r.file} 실행 필요`)).join('') +
       line(fnOk, '함수 whoami()', fnOk ? '있음' : `없음 — supabase/fix-admin.sql 실행 필요 (${fnErr?.message || ''})`) +
+      line(bucketOk, '스토리지 버킷 site', bucketOk ? '있음 — 파일 업로드를 쓸 수 있습니다' : '없음 — supabase/add-storage.sql 실행 필요') +
       (files.length
         ? `<div class="row-item"><span class="no-dot"><i class="fa-solid fa-triangle-exclamation"></i></span>
              <div class="grow"><b>실행이 필요한 파일: ${[...new Set(files)].join(', ')}</b>
@@ -260,6 +270,52 @@
   Object.keys(LABEL).forEach(refresh);
 
   /* =========================================================
+     파일 업로드 (Supabase Storage)
+     ========================================================= */
+  const MAX_MB = 10;
+
+  async function uploadImage(file, folder) {
+    if (!file.type.startsWith('image/')) throw new Error('이미지 파일만 올릴 수 있습니다.');
+    if (file.size > MAX_MB * 1024 * 1024) throw new Error(`${MAX_MB}MB 이하만 올릴 수 있습니다.`);
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await sb.storage.from('site').upload(path, file, { cacheControl: '3600', upsert: false });
+    if (error) {
+      throw new Error(
+        /Bucket not found/i.test(error.message)
+          ? 'site 버킷이 없습니다. supabase/add-storage.sql 을 실행해 주세요.'
+          : error.message
+      );
+    }
+    return sb.storage.from('site').getPublicUrl(path).data.publicUrl;
+  }
+
+  // 파일을 고르면 같은 줄의 주소 입력칸을 채웁니다.
+  async function handleFile(file, input, folder, after) {
+    if (!file) return;
+    const row = input.closest('.upload-row');
+    row?.classList.add('uploading');
+    try {
+      input.value = await uploadImage(file, folder);
+      toast('업로드했습니다.');
+      after && (await after());
+    } catch (e) {
+      toast('업로드 실패: ' + e.message);
+    }
+    row?.classList.remove('uploading');
+  }
+
+  document.addEventListener('change', (e) => {
+    const f = e.target.closest('.upload-btn input[type="file"]');
+    if (!f) return;
+    const row = f.closest('.upload-row');
+    const input = row.querySelector('input[type="url"], input[type="text"], input[name]');
+    const key = f.dataset.slot;
+    handleFile(f.files[0], input, key ? 'images' : 'uploads', key ? () => saveImage(key) : null);
+    f.value = '';
+  });
+
+  /* =========================================================
      이미지 교체
      ========================================================= */
   async function renderImages() {
@@ -273,15 +329,19 @@
     box.innerHTML = RIFT_CONFIG.imageSlots
       .map(
         (s) => `
-        <div class="img-slot">
+        <div class="img-slot" data-drop="${s.key}">
           <img src="${escapeHtml(saved[s.key] || RIFT_CONFIG.images[s.key])}" alt=""
                onerror="this.style.opacity=.25">
           <div class="img-info">
             <b>${s.label}</b>
-            <small>권장 ${s.size}</small>
-            <div class="img-row">
-              <input type="url" placeholder="https://... (비우면 기본값)"
+            <small>권장 ${s.size} · 파일을 끌어다 놓아도 됩니다</small>
+            <div class="upload-row">
+              <input type="url" placeholder="주소를 넣거나 파일을 올리세요"
                      value="${escapeHtml(saved[s.key] || '')}" data-img-key="${s.key}">
+              <label class="btn btn-soft btn-sm upload-btn" title="파일 올리기">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                <input type="file" accept="image/*" data-slot="${s.key}" hidden>
+              </label>
               <button class="btn btn-soft btn-sm" data-img-save="${s.key}">저장</button>
             </div>
           </div>
@@ -290,19 +350,39 @@
       .join('');
   }
 
-  document.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-img-save]');
-    if (!b) return;
-    const key = b.dataset.imgSave;
+  async function saveImage(key) {
     const url = document.querySelector(`[data-img-key="${key}"]`).value.trim();
-    b.disabled = true;
     const { error } = url
       ? await sb.from('site_images').upsert({ key, url, updated_at: new Date().toISOString() })
       : await sb.from('site_images').delete().eq('key', key);
-    b.disabled = false;
     if (error) return toast('저장 실패: ' + error.message);
     toast(url ? '이미지를 바꿨습니다.' : '기본 이미지로 되돌렸습니다.');
     renderImages();
+  }
+
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-img-save]');
+    if (!b) return;
+    b.disabled = true;
+    await saveImage(b.dataset.imgSave);
+    b.disabled = false;
+  });
+
+  // 끌어다 놓기
+  document.addEventListener('dragover', (e) => {
+    const slot = e.target.closest('[data-drop]');
+    if (!slot) return;
+    e.preventDefault();
+    slot.classList.add('dragging');
+  });
+  document.addEventListener('dragleave', (e) => e.target.closest('[data-drop]')?.classList.remove('dragging'));
+  document.addEventListener('drop', (e) => {
+    const slot = e.target.closest('[data-drop]');
+    if (!slot) return;
+    e.preventDefault();
+    slot.classList.remove('dragging');
+    const key = slot.dataset.drop;
+    handleFile(e.dataTransfer.files[0], slot.querySelector(`[data-img-key="${key}"]`), 'images', () => saveImage(key));
   });
 
   /* =========================================================

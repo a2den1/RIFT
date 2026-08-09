@@ -83,7 +83,16 @@
       <form data-table="notices">
         <div class="field"><label>제목</label><input name="title" required></div>
         <div class="field"><label>내용</label><textarea name="body"></textarea></div>
-        <div class="field"><label>이미지 주소 (선택)</label><input name="image_url" placeholder="https://..."></div>
+        <div class="field">
+          <label>이미지 (선택)</label>
+          <div class="upload-row">
+            <input name="image_url" placeholder="주소를 넣거나 파일을 올리세요">
+            <label class="btn btn-soft btn-sm upload-btn" title="파일 올리기">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i>
+              <input type="file" accept="image/*" hidden>
+            </label>
+          </div>
+        </div>
         <button class="btn btn-primary">등록</button>
       </form>
       <div class="rows" data-list="notices"></div>
@@ -114,7 +123,16 @@
         </div>
         <div class="field"><label>경기 시각</label><input name="starts_at" type="datetime-local" required></div>
         <div class="field"><label>맵</label><input name="map" placeholder="협곡"></div>
-        <div class="field"><label>이미지 주소 (선택)</label><input name="image_url" placeholder="https://..."></div>
+        <div class="field">
+          <label>이미지 (선택)</label>
+          <div class="upload-row">
+            <input name="image_url" placeholder="주소를 넣거나 파일을 올리세요">
+            <label class="btn btn-soft btn-sm upload-btn" title="파일 올리기">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i>
+              <input type="file" accept="image/*" hidden>
+            </label>
+          </div>
+        </div>
         <button class="btn btn-primary">등록</button>
       </form>
       <div class="rows" data-list="matches"></div>

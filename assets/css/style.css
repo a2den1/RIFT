@@ -565,10 +565,23 @@ main{animation:pageIn .28s var(--ease) both}
 .img-info{flex:1;min-width:0}
 .img-info b{display:block;font-family:'Paperlogy',sans-serif;font-size:14.5px}
 .img-info small{font-size:12.5px;color:var(--txt-3)}
-.img-row{display:flex;gap:8px;margin-top:8px}
-.img-row input{flex:1;min-width:0;background:var(--surface);color:var(--txt);border-radius:10px;
-  padding:9px 12px;font-family:inherit;font-size:13.5px;outline:none}
-.img-row input:focus{background:var(--surface-3)}
+/* 주소 입력 + 파일 올리기 */
+.upload-row{display:flex;gap:8px;margin-top:8px;position:relative}
+.upload-row input[type="url"],.upload-row input[type="text"],.upload-row input:not([type]){
+  flex:1;min-width:0;background:var(--surface-2);color:var(--txt);border-radius:10px;
+  padding:10px 13px;font-family:inherit;font-size:13.5px;outline:none;
+}
+.img-slot .upload-row input{background:var(--surface)}
+.upload-row input:focus{background:var(--surface-3)}
+.upload-btn{cursor:pointer;flex-shrink:0;padding-inline:14px}
+.upload-row.uploading{pointer-events:none;opacity:.55}
+.upload-row.uploading::after{
+  content:'올리는 중…';position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-size:12px;color:var(--txt-2);
+}
+.img-slot{transition:background .2s,outline-color .2s}
+.img-slot.dragging{background:var(--pri-soft)}
+.img-slot.dragging img{opacity:.5}
 
 /* 탭 잠금 */
 .lock-item{padding:14px 16px;border-radius:14px;background:var(--surface-2)}
