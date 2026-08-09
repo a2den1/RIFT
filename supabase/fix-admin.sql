@@ -65,6 +65,10 @@ insert into public.admins (discord_username)
 values ('_a2den.')
 on conflict (discord_username) do nothing;
 
--- 7) 실행 결과 확인 — admins 에 무엇이 들어 있는지
+-- 7) PostgREST 스키마 캐시 갱신
+--    새로 만든 함수를 바로 인식하지 못하는 경우를 막아줍니다.
+notify pgrst, 'reload schema';
+
+-- 8) 실행 결과 확인 — admins 에 무엇이 들어 있는지
 select id, discord_username, public.norm_discord(discord_username) as 정규화, discord_id
 from public.admins;

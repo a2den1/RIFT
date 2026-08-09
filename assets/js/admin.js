@@ -10,44 +10,84 @@
   const msg = document.getElementById('deniedMsg');
   const diagPanel = document.getElementById('diagPanel');
 
+  const line = (ok, title, sub) => `
+    <div class="row-item">
+      <span class="${ok ? 'ok-dot' : 'no-dot'}"><i class="fa-solid fa-${ok ? 'check' : 'xmark'}"></i></span>
+      <div class="grow"><b>${title}</b><small>${sub ?? ''}</small></div>
+    </div>`;
+
+  document.getElementById('diagRaw2').addEventListener('click', () =>
+    document.getElementById('diagRaw').classList.toggle('hidden')
+  );
+
   if (!RIFT.connected) {
     denied.classList.remove('hidden');
-    msg.textContent = 'Supabase가 연결되지 않았습니다. assets/js/config.js 에 URL과 anon key를 넣고 supabase/schema.sql 을 실행해 주세요.';
-    return;
-  }
-  if (!RIFT.user) {
-    denied.classList.remove('hidden');
-    msg.textContent = '디스코드로 로그인한 뒤 다시 시도해 주세요.';
+    msg.textContent = 'Supabase가 연결되지 않았습니다. assets/js/config.js 에 URL과 anon key를 넣어 주세요.';
+    document.getElementById('diagTables').innerHTML = line(false, 'Supabase 연결', 'config.js 의 url / anonKey 가 비어 있습니다');
     return;
   }
 
   const sb = RIFT.client;
 
-  /* ---------- 권한 진단 ----------
-     화면의 관리자 판정과 DB(RLS)의 판정이 다를 수 있어서, DB 쪽 값을 직접 확인합니다. */
+  /* ---------- SQL 실행 여부 점검 ----------
+     테이블과 함수가 실제로 있는지 하나씩 확인합니다.
+     "SQL 을 돌렸는데도 안 된다" 는 경우 대부분 여기서 원인이 드러납니다. */
+  const NEEDED = [
+    ['admins', 'schema.sql'],
+    ['notices', 'schema.sql'],
+    ['events', 'schema.sql'],
+    ['matches', 'schema.sql'],
+    ['clubs', 'schema.sql'],
+    ['players', 'schema.sql'],
+    ['server_status', 'schema.sql'],
+    ['site_images', 'add-images-locks.sql'],
+    ['tab_locks', 'add-images-locks.sql'],
+  ];
+
+  async function checkTables() {
+    const box = document.getElementById('diagTables');
+    box.innerHTML = '<div class="empty">확인 중…</div>';
+    const results = await Promise.all(
+      NEEDED.map(async ([t, file]) => {
+        const { error } = await sb.from(t).select('*', { head: true, count: 'exact' }).limit(1);
+        return { t, file, ok: !error, msg: error?.message || '' };
+      })
+    );
+    const { error: fnErr } = await sb.rpc('whoami');
+    const fnOk = !fnErr;
+
+    const missing = results.filter((r) => !r.ok);
+    const files = [...new Set(missing.map((m) => m.file))];
+    if (!fnOk) files.push('fix-admin.sql');
+
+    box.innerHTML =
+      results.map((r) => line(r.ok, `테이블 ${r.t}`, r.ok ? '있음' : `없음 — supabase/${r.file} 실행 필요`)).join('') +
+      line(fnOk, '함수 whoami()', fnOk ? '있음' : `없음 — supabase/fix-admin.sql 실행 필요 (${fnErr?.message || ''})`) +
+      (files.length
+        ? `<div class="row-item"><span class="no-dot"><i class="fa-solid fa-triangle-exclamation"></i></span>
+             <div class="grow"><b>실행이 필요한 파일: ${[...new Set(files)].join(', ')}</b>
+             <small>이미 실행했다면 SQL Editor 에서 <code>notify pgrst, 'reload schema';</code> 를 한 번 더 돌려 주세요. 새 테이블을 API 가 아직 못 읽는 상태일 수 있습니다.</small></div></div>`
+        : line(true, '스키마 준비 완료', '필요한 테이블과 함수가 모두 있습니다'));
+    return { fnOk, missing };
+  }
+
+  /* ---------- 권한 진단 ---------- */
   async function diagnose() {
     const rows = document.getElementById('diagRows');
     const raw = document.getElementById('diagRaw');
-    diagPanel.classList.remove('hidden');
     rows.innerHTML = '<div class="empty">확인 중…</div>';
     raw.textContent = '';
 
-    const { data, error } = await sb.rpc('whoami');
-    if (error) {
-      rows.innerHTML = `
-        <div class="row-item">
-          <span class="no-dot"><i class="fa-solid fa-xmark"></i></span>
-          <div class="grow"><b>진단 함수를 찾을 수 없습니다</b>
-          <small>supabase/fix-admin.sql 을 SQL Editor에서 실행해 주세요. (${error.message})</small></div>
-        </div>`;
+    if (!RIFT.user) {
+      rows.innerHTML = line(false, '로그인', '디스코드로 로그인해야 권한을 확인할 수 있습니다');
       return null;
     }
 
-    const line = (ok, title, sub) => `
-      <div class="row-item">
-        <span class="${ok ? 'ok-dot' : 'no-dot'}"><i class="fa-solid fa-${ok ? 'check' : 'xmark'}"></i></span>
-        <div class="grow"><b>${title}</b><small>${sub ?? ''}</small></div>
-      </div>`;
+    const { data, error } = await sb.rpc('whoami');
+    if (error) {
+      rows.innerHTML = line(false, '권한 확인 실패', `whoami() 함수가 없습니다. supabase/fix-admin.sql 을 실행해 주세요. (${error.message})`);
+      return null;
+    }
 
     rows.innerHTML =
       line(!!data.username, 'DB가 읽은 사용자명', data.username || '(비어 있음 — JWT에 사용자명이 없습니다)') +
@@ -59,17 +99,26 @@
     raw.textContent = JSON.stringify(data, null, 2);
     return data;
   }
-  document.getElementById('diagRefresh').addEventListener('click', diagnose);
+
+  const runAll = async () => {
+    await checkTables();
+    return diagnose();
+  };
+  document.getElementById('diagRefresh').addEventListener('click', runAll);
 
   // DB 판정을 기준으로 화면을 엽니다. 화면 쪽 추정은 참고용입니다.
-  const who = await diagnose();
-  const dbAdmin = who ? who.is_admin : RIFT.isAdmin;
+  const who = await runAll();
 
-  if (!dbAdmin) {
+  if (!RIFT.user) {
+    denied.classList.remove('hidden');
+    msg.textContent = '디스코드로 로그인한 뒤 다시 시도해 주세요.';
+    return;
+  }
+  if (!who || !who.is_admin) {
     denied.classList.remove('hidden');
     msg.textContent = who
-      ? `${who.username || '이 계정'} 에는 관리자 권한이 없습니다. 아래 진단 결과를 확인하세요.`
-      : `${RIFT.discordName} 계정 확인에 실패했습니다. 아래 진단 결과를 확인하세요.`;
+      ? `${who.username || '이 계정'} 에는 관리자 권한이 없습니다. 아래 점검 결과를 확인하세요.`
+      : `계정 확인에 실패했습니다. 아래 점검 결과를 확인하세요.`;
     return;
   }
 

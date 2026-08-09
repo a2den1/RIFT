@@ -39,3 +39,7 @@ begin
          using (public.is_admin()) with check (public.is_admin())', t, t);
   end loop;
 end $$;
+
+-- PostgREST 가 새 테이블을 바로 인식하도록 스키마 캐시를 갱신합니다.
+-- 이걸 빠뜨리면 방금 만든 테이블인데도 "찾을 수 없다"는 오류가 납니다.
+notify pgrst, 'reload schema';

@@ -54,10 +54,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   initToast();
   await RIFT.ready;
   initAuthUI();
+  initHoverCard(); // 문서 위임이라 한 번만 등록합니다
+  initNavPill();
+  initRouter();
+  renderPage();
+});
 
+/* 페이지 본문에 필요한 렌더링. 탭을 옮길 때마다 다시 실행됩니다. */
+function renderPage() {
   $$('[data-copy-ip]').forEach((el) => (el.textContent = CFG.serverIp));
   $$('[data-version]').forEach((el) => (el.textContent = CFG.version));
   $$('[data-discord]').forEach((el) => el.setAttribute('href', CFG.discordInvite));
+  bindCopy();
+
   const on = $('#onlineCount');
   if (on) {
     if (RIFT.onlineCount == null) {
@@ -79,15 +88,81 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderHomeBoards();
   renderRanking();
   initGuide();
-  initHoverCard();
-  initPills();
+  initScopedPills();
 
   $$('[data-plan]').forEach((b) =>
     b.addEventListener('click', () => toast(`${b.dataset.plan} 후원 문의는 디스코드에서 받습니다.`))
   );
 
   if (!document.body.classList.contains('no-anim')) initReveal();
-});
+}
+
+/* =========================================================
+   탭 전환 — 헤더를 그대로 두고 본문만 교체합니다.
+   페이지마다 전체를 새로 읽으면 헤더가 매번 깜빡이기 때문입니다.
+   ========================================================= */
+const SPA_PAGES = ['index.html', 'play.html', 'guide.html', 'league.html', 'ranking.html', 'support.html'];
+const pageOf = (url) => {
+  try {
+    return new URL(url, location.href).pathname.split('/').pop() || 'index.html';
+  } catch {
+    return null;
+  }
+};
+
+function markCurrentTab() {
+  const here = pageOf(location.href);
+  $$('#nav a').forEach((a) => a.classList.toggle('current', a.getAttribute('href') === here));
+  $('#nav')?._pill?.toActive();
+}
+
+async function navigate(url, push = true) {
+  const main = $('main');
+  if (!main) return void (location.href = url);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const fresh = doc.querySelector('main');
+    if (!fresh) throw new Error('main 없음');
+    main.replaceWith(fresh);
+    document.title = doc.title;
+    document.body.className = doc.body.className;
+    if (push) history.pushState({}, '', url);
+    scrollTo(0, 0);
+    markCurrentTab();
+    renderPage();
+  } catch {
+    location.href = url; // 실패하면 평소대로 이동
+  }
+}
+
+function initRouter() {
+  if (!window.DOMParser || !SPA_PAGES.includes(pageOf(location.href))) return;
+  markCurrentTab();
+
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a || a.target || a.hasAttribute('download')) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || e.defaultPrevented) return;
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || /^[a-z]+:/i.test(href)) return;
+    if (!SPA_PAGES.includes(pageOf(a.href))) return;
+
+    e.preventDefault();
+    const nav = $('#nav');
+    if (a.closest('#nav')) {
+      nav?._pill?.move(a); // 배경이 먼저 미끄러진 뒤 본문이 바뀝니다
+      nav.classList.remove('open');
+      $('#navToggle').innerHTML = '<i class="fa-solid fa-bars"></i>';
+      setTimeout(() => navigate(a.href), 200);
+    } else {
+      navigate(a.href);
+    }
+  });
+
+  addEventListener('popstate', () => navigate(location.href, false));
+}
 
 /* =========================================================
    헤더 / 토스트
@@ -109,10 +184,13 @@ function initHeader() {
       if (open && nav._pill) requestAnimationFrame(nav._pill.toActive);
     });
   }
-  const here = location.pathname.split('/').pop() || 'index.html';
-  $$('#nav a').forEach((a) => a.getAttribute('href') === here && a.classList.add('current'));
+  markCurrentTab();
+}
 
-  $$('[data-copy-btn]').forEach((b) =>
+function bindCopy() {
+  $$('[data-copy-btn]').forEach((b) => {
+    if (b._bound) return;
+    b._bound = true;
     b.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(CFG.serverIp);
@@ -125,8 +203,8 @@ function initHeader() {
         ta.remove();
       }
       toast('서버 주소를 복사했습니다.');
-    })
-  );
+    });
+  });
 }
 
 let toastTimer;
@@ -723,6 +801,7 @@ function initGuide() {
     toc._pill && toc._pill.toActive();
   };
   const sweep = () => {
+    if (!toc.isConnected) return; // 다른 탭으로 옮겨간 뒤에는 동작하지 않습니다
     let cur = targets[0];
     for (const t of targets) {
       if (!t.offsetParent && t.tagName !== 'H2') continue; // 접힌 섹션 내부는 건너뜀
@@ -733,14 +812,50 @@ function initGuide() {
   };
   sweep();
   addEventListener('scroll', sweep, { passive: true });
+
+  /* ---------- 목차도 접고 펼치기 ----------
+     상위 항목과 그 아래 하위 항목을 묶어서 하나씩 여닫습니다. */
+  const tocLinks = $$('a', toc);
+  let group = null;
+  tocLinks.forEach((a) => {
+    if (!a.classList.contains('sub')) {
+      group = document.createElement('div');
+      group.className = 'toc-group';
+      a.after(group);
+      a._group = group;
+    } else if (group) {
+      group.append(a);
+    }
+  });
+
+  tocLinks
+    .filter((a) => a._group)
+    .forEach((a) => {
+      if (!a._group.children.length) return a._group.remove();
+      a.classList.add('has-sub', 'open');
+      const cap = document.createElement('button');
+      cap.className = 'toc-cap';
+      cap.setAttribute('aria-label', '하위 항목 접기');
+      cap.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+      cap.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const open = a.classList.toggle('open');
+        a._group.classList.toggle('closed', !open);
+        cap.setAttribute('aria-label', open ? '하위 항목 접기' : '하위 항목 펼치기');
+        setTimeout(() => toc._pill && toc._pill.toActive(), 320);
+      });
+      a.append(cap);
+    });
 }
 
 /* =========================================================
    움직이는 배경 — 호버/선택에 따라 배경 하나가 미끄러져 이동합니다.
    항목마다 배경이 켜졌다 꺼지는 방식 대신 사용합니다.
    ========================================================= */
-function initPills() {
-  const setup = (box, itemSel, mode) => {
+function pillSetup(box, itemSel, mode) {
+  {
+    if (box._pill) return;
     const pill = document.createElement('span');
     pill.className = 'pill';
     box.prepend(pill);
@@ -766,31 +881,35 @@ function initPills() {
     box._pill = { move, toActive };
 
     if (mode === 'nav') {
-      // 누른 항목으로 배경이 미끄러진 뒤 이동합니다. (호버로는 움직이지 않습니다)
-      $$(itemSel, box).forEach((el) =>
-        el.addEventListener('click', (e) => {
-          const href = el.getAttribute('href');
-          move(el);
-          if (!href || href.startsWith('#') || e.metaKey || e.ctrlKey || e.shiftKey) return;
-          e.preventDefault();
-          setTimeout(() => (location.href = el.href), 240);
-        })
-      );
+      // 누른 항목으로 배경이 미끄러집니다. (호버로는 움직이지 않습니다)
+      box.addEventListener('click', (e) => {
+        const el = e.target.closest(itemSel);
+        if (el) move(el);
+      });
     } else if (mode === 'tabs') {
       // 탭 전환은 페이지 이동이 없으므로 활성 항목만 따라갑니다.
       box.addEventListener('click', () => setTimeout(toActive, 0));
     }
     box.addEventListener('scroll', toActive, { passive: true });
-    addEventListener('resize', toActive);
     document.fonts && document.fonts.ready.then(toActive);
     requestAnimationFrame(toActive);
-  };
+  }
+}
 
+function initNavPill() {
   const nav = $('#nav');
-  if (nav) setup(nav, 'a', 'nav');
-  $$('.seg').forEach((s) => setup(s, 'button, a', 'tabs'));
+  if (nav) pillSetup(nav, 'a', 'nav');
+  // 창 크기가 바뀌면 살아 있는 배경만 다시 계산합니다.
+  addEventListener('resize', () =>
+    $$('#nav, .seg, .toc').forEach((b) => b._pill && b._pill.toActive())
+  );
+}
+
+// 본문 안에 있는 요소라 탭을 옮길 때마다 다시 잡아줍니다.
+function initScopedPills() {
+  $$('.seg').forEach((s) => pillSetup(s, 'button, a', 'tabs'));
   const toc = $('#toc');
-  if (toc) setup(toc, 'a', 'active');
+  if (toc) pillSetup(toc, 'a', 'active');
 }
 
 /* =========================================================
@@ -833,7 +952,11 @@ function initReveal() {
       const r = el.getBoundingClientRect();
       if (r.top < innerHeight && r.bottom > 0) show(el);
     });
-  addEventListener('load', () => setTimeout(sweep, 800));
-  addEventListener('scroll', sweep, { passive: true });
-  document.addEventListener('visibilitychange', () => !document.hidden && setTimeout(sweep, 250));
+  setTimeout(sweep, 700);
+  if (!initReveal._bound) {
+    initReveal._bound = true;
+    addEventListener('scroll', () => initReveal._sweep && initReveal._sweep(), { passive: true });
+    document.addEventListener('visibilitychange', () => !document.hidden && setTimeout(() => initReveal._sweep && initReveal._sweep(), 250));
+  }
+  initReveal._sweep = sweep;
 }

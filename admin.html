@@ -46,12 +46,16 @@
   <a href="login.html" class="btn btn-primary">로그인</a>
 </div>
 
-<section class="panel hidden" id="diagPanel" style="margin-bottom:14px">
-  <h2>권한 진단</h2>
-  <p>DB가 지금 로그인한 계정을 어떻게 판단하는지 보여줍니다.</p>
+<section class="panel" id="diagPanel" style="margin-bottom:14px">
+  <h2>설정 점검</h2>
+  <p>SQL 실행 결과와 로그인 계정 권한을 확인합니다.</p>
+  <div class="rows" id="diagTables"></div>
   <div class="rows" id="diagRows"></div>
-  <pre class="diag-raw" id="diagRaw"></pre>
-  <button class="btn btn-soft btn-sm" id="diagRefresh"><i class="fa-solid fa-rotate"></i> 다시 확인</button>
+  <pre class="diag-raw hidden" id="diagRaw"></pre>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <button class="btn btn-soft btn-sm" id="diagRefresh"><i class="fa-solid fa-rotate"></i> 다시 확인</button>
+    <button class="btn btn-soft btn-sm" id="diagRaw2"><i class="fa-solid fa-code"></i> 원본 보기</button>
+  </div>
 </section>
 
 <div id="adminPanel" class="hidden">
