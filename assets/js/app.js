@@ -79,6 +79,7 @@ function renderPage() {
 
   if (applyTabLock()) return; // 막힌 탭이면 본문을 대체하고 나머지 렌더링은 생략
 
+  initHeroVideo();
   $$('[data-img]').forEach((el) => (el.src = RIFT.image(el.dataset.img)));
   renderJobs();
   renderNews();
@@ -274,6 +275,30 @@ function initAuthUI() {
   } else {
     slot.innerHTML = `<a href="login.html" class="btn btn-soft btn-sm">로그인</a>`;
   }
+}
+
+/* =========================================================
+   히어로 배경 영상
+   한 번 재생하고 마지막 프레임에서 멈춥니다.
+   ========================================================= */
+function initHeroVideo() {
+  const v = $('#heroVideo');
+  if (!v) return;
+
+  // 모션 최소화를 켠 사용자에게는 첫 프레임만 보여줍니다.
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    v.autoplay = false;
+    v.addEventListener('loadeddata', () => v.pause(), { once: true });
+    return;
+  }
+
+  // loop 가 없으면 재생이 끝난 뒤 마지막 프레임이 그대로 남습니다.
+  // 여기서 되감으면 오히려 프레임이 튀므로 정지만 확실히 해 둡니다.
+  v.addEventListener('ended', () => v.pause(), { once: true });
+
+  // 일부 브라우저는 autoplay 속성만으로 재생하지 않습니다.
+  const p = v.play();
+  if (p && p.catch) p.catch(() => {});
 }
 
 /* =========================================================

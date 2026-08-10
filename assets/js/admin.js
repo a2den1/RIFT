@@ -2,6 +2,16 @@
    RIFT — 관리자 페이지
    화면 노출은 여기서 막지만, 실제 권한은 Supabase RLS가 결정합니다.
    ========================================================= */
+// 스크립트가 도중에 죽으면 화면이 통째로 비어 원인을 알 수 없습니다.
+// 처리되지 않은 오류를 관리자 화면에 그대로 띄웁니다.
+addEventListener('unhandledrejection', (e) => {
+  const d = document.getElementById('adminDenied');
+  const m = document.getElementById('deniedMsg');
+  if (!d || !m) return;
+  d.classList.remove('hidden');
+  m.textContent = '관리자 화면을 그리는 중 오류가 발생했습니다: ' + (e.reason?.message || e.reason);
+});
+
 (async () => {
   await RIFT.ready;
 
@@ -109,7 +119,7 @@
              <div class="grow"><b>실행이 필요한 파일: ${[...new Set(files)].join(', ')}</b>
              <small>이미 실행했다면 SQL Editor 에서 <code>notify pgrst, 'reload schema';</code> 를 한 번 더 돌려 주세요. 새 테이블을 API 가 아직 못 읽는 상태일 수 있습니다.</small></div></div>`
         : line(true, '스키마 준비 완료', '필요한 테이블과 함수가 모두 있습니다'));
-    return { fnOk, missing };
+    return { fnOk, files };
   }
 
   /* ---------- 권한 진단 ---------- */
