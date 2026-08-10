@@ -765,13 +765,34 @@ main{animation:pageIn .28s var(--ease) both}
   .page-head h1{font-size:33px}
 }
 @media (max-width:860px){
-  .nav{position:fixed;top:var(--header-h);left:0;right:0;flex-direction:column;gap:3px;padding:12px 20px 20px;
-    display:none;background:rgba(23,23,28,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-    box-shadow:var(--sh-2);transition:top .35s var(--ease)}
-  .header.scrolled .nav{top:var(--header-h-sm)}
-  .nav.open{display:flex}
-  .nav a{padding:12px 15px;font-size:16px}
-  .nav-toggle{display:inline-flex}
+  /* 모바일에서는 헤더 메뉴가 오른쪽에서 밀려 나오는 사이드바가 됩니다. */
+  /* 헤더의 backdrop-filter 가 fixed 자식의 기준 상자를 헤더로 만들어 버립니다.
+     그래서 bottom:0 대신 높이를 직접 지정합니다. */
+  .nav{
+    position:fixed;top:0;right:0;left:auto;z-index:110;
+    height:100vh;height:100dvh;
+    width:min(300px,82vw);
+    display:flex;flex-direction:column;align-items:stretch;gap:4px;
+    padding:calc(var(--header-h) + 14px) 16px 24px;
+    background:var(--surface);box-shadow:-26px 0 60px rgba(0,0,0,.5);
+    overflow-y:auto;overscroll-behavior:contain;
+    transform:translateX(100%);visibility:hidden;
+    transition:transform .34s var(--ease),visibility .34s;
+  }
+  .nav.open{transform:none;visibility:visible}
+  .nav a{padding:13px 15px;font-size:16px;border-radius:11px}
+  .nav .pill{border-radius:11px}
+
+  /* 헤더(z-index 100)보다 아래에 깔아야 사이드바가 가려지지 않습니다. */
+  .nav-backdrop{
+    position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .3s ease;
+  }
+  .nav-backdrop.show{opacity:1;pointer-events:auto}
+  body.nav-open{overflow:hidden}
+
+  .nav-toggle{display:inline-flex;position:relative;z-index:115}
   .header-actions .btn{display:none}
   .me span{display:none}
 }

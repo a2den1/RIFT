@@ -156,8 +156,7 @@ function initRouter() {
     const nav = $('#nav');
     if (a.closest('#nav')) {
       nav?._pill?.move(a); // 배경이 먼저 미끄러진 뒤 본문이 바뀝니다
-      nav.classList.remove('open');
-      $('#navToggle').innerHTML = '<i class="fa-solid fa-bars"></i>';
+      window.closeSidebar && window.closeSidebar();
       setTimeout(() => navigate(a.href), 200);
     } else {
       navigate(a.href);
@@ -177,17 +176,40 @@ function initHeader() {
     onScroll();
     addEventListener('scroll', onScroll, { passive: true });
   }
+  initSidebar();
+  markCurrentTab();
+}
+
+/* =========================================================
+   모바일 사이드바
+   좁은 화면에서 헤더 메뉴가 오른쪽 사이드바로 열립니다.
+   ========================================================= */
+function initSidebar() {
   const nav = $('#nav');
   const toggle = $('#navToggle');
-  if (nav && toggle) {
-    toggle.addEventListener('click', () => {
-      const open = nav.classList.toggle('open');
-      toggle.innerHTML = `<i class="fa-solid fa-${open ? 'xmark' : 'bars'}"></i>`;
-      // 메뉴가 열린 뒤에야 링크 위치가 잡히므로 움직이는 배경을 다시 계산합니다.
-      if (open && nav._pill) requestAnimationFrame(nav._pill.toActive);
-    });
-  }
-  markCurrentTab();
+  if (!nav || !toggle) return;
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'nav-backdrop';
+  document.body.append(backdrop);
+
+  const setOpen = (open) => {
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('show', open);
+    document.body.classList.toggle('nav-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+    toggle.innerHTML = `<i class="fa-solid fa-${open ? 'xmark' : 'bars'}"></i>`;
+    // 열린 뒤에야 링크 위치가 잡히므로 움직이는 배경을 다시 계산합니다.
+    if (open && nav._pill) requestAnimationFrame(nav._pill.toActive);
+  };
+  window.closeSidebar = () => setOpen(false);
+
+  toggle.addEventListener('click', () => setOpen(!nav.classList.contains('open')));
+  backdrop.addEventListener('click', () => setOpen(false));
+  addEventListener('keydown', (e) => e.key === 'Escape' && setOpen(false));
+  // 데스크톱 폭으로 돌아가면 열린 상태를 정리합니다.
+  addEventListener('resize', () => innerWidth > 860 && setOpen(false));
 }
 
 /* 이미지 파일을 Supabase Storage 에 올리고 공개 주소를 돌려줍니다. */
