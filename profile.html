@@ -78,11 +78,10 @@
     <section class="panel">
       <h2>프로필 수정</h2>
       <p>랭킹과 구단 명단에 표시되는 정보입니다.</p>
+      <!-- 닉네임은 게임 안에서 인증해야 등록됩니다. 여기서는 직접 못 고칩니다. -->
+      <div class="verify" id="verifyBox"></div>
+
       <form id="profileForm">
-        <div class="field">
-          <label>마인크래프트 닉네임</label>
-          <input name="mc_name" maxlength="16" placeholder="게임에서 쓰는 닉네임" required>
-        </div>
         <div class="field">
           <label>대명사</label>
           <input name="pronouns" maxlength="24" list="pronounList" placeholder="예: they/them">

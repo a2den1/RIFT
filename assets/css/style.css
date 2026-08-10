@@ -515,17 +515,54 @@ main{animation:pageIn .28s var(--ease) both}
 /* =========================================================
    서버 접속
    ========================================================= */
-.play-ip{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  padding:26px 30px;border-radius:var(--r-lg);background:var(--surface)}
-.play-ip .lbl{font-size:13px;color:var(--txt-3)}
-.play-ip code{background:none;padding:0;color:var(--txt);font-family:'Paperlogy',sans-serif;
-  font-size:29px;font-weight:800;display:block;margin-top:3px}
-.steps{display:grid;gap:12px}
-.step-row{display:flex;gap:17px;padding:21px 23px;border-radius:var(--r);background:var(--surface)}
-.step-num{width:31px;height:31px;flex-shrink:0;border-radius:11px;background:var(--pri);color:#fff;
-  display:grid;place-items:center;font-family:'Paperlogy',sans-serif;font-weight:700;font-size:15px}
-.step-row h3{font-size:16.5px}
-.step-row p{margin-top:4px;font-size:14.5px;color:var(--txt-2)}
+/* 주소 하나만 크게 보여 주는 화면. 카드로 감싸지 않습니다. */
+.connect{padding:calc(var(--header-h) + 72px) 0 8px;text-align:center}
+.connect-label{font-size:13px;color:var(--txt-3);letter-spacing:.4px}
+.connect-ip{
+  display:inline-flex;align-items:baseline;gap:16px;flex-wrap:wrap;justify-content:center;
+  margin-top:10px;padding:0;cursor:pointer;
+}
+.connect-ip code{
+  background:none;padding:0;color:var(--txt);font-family:'Paperlogy',sans-serif;
+  font-size:clamp(34px,7vw,58px);font-weight:800;letter-spacing:-1px;line-height:1.1;
+  transition:color .2s;
+}
+.connect-ip:hover code{color:var(--accent)}
+.connect-copy{
+  font-size:13.5px;color:var(--txt-3);padding:7px 14px;border-radius:999px;
+  background:var(--surface);transition:background .2s,color .2s;white-space:nowrap;
+}
+.connect-ip:hover .connect-copy{background:var(--surface-2);color:var(--txt)}
+.connect-meta{margin-top:16px;font-size:14px;color:var(--txt-3);display:flex;gap:10px;
+  justify-content:center;flex-wrap:wrap}
+.connect-meta b{color:var(--txt-2);font-weight:600}
+.connect-meta .sep{opacity:.45}
+
+.play-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:56px;padding:56px 0 100px;align-items:start}
+.play-h2{font-size:22px;font-weight:800;margin-bottom:22px}
+
+/* 번호 동그라미 대신 얇은 세로 레일로 순서를 표시합니다. */
+.rail{position:relative;counter-reset:rail;padding-left:34px}
+.rail::before{content:'';position:absolute;left:9px;top:6px;bottom:10px;width:2px;background:var(--surface-2)}
+.rail li{position:relative;padding-bottom:28px;counter-increment:rail}
+.rail li:last-child{padding-bottom:0}
+.rail li::before{
+  content:counter(rail);position:absolute;left:-34px;top:0;
+  width:20px;height:20px;border-radius:50%;background:var(--bg);
+  box-shadow:0 0 0 2px var(--surface-3);
+  display:grid;place-items:center;
+  font-family:'Paperlogy',sans-serif;font-size:11px;font-weight:700;color:var(--txt-3);
+}
+.rail h3{font-size:17px}
+.rail p{margin-top:6px;font-size:15px;color:var(--txt-2);line-height:1.75}
+.rail .card-link{margin-left:4px}
+
+.faq{display:flex;flex-direction:column}
+.faq-item{padding:18px 0}
+.faq-item + .faq-item{box-shadow:inset 0 1px 0 var(--surface-2)}
+.faq-item h3{font-size:15.5px}
+.faq-item p{margin-top:6px;font-size:14.5px;color:var(--txt-2);line-height:1.7}
+.faq-item .btn{margin-top:12px}
 
 /* =========================================================
    로그인
@@ -634,6 +671,30 @@ main{animation:pageIn .28s var(--ease) both}
 #clubMount > form{margin-top:14px}
 #clubMount > .btn{margin-top:16px}
 
+/* 마인크래프트 계정 인증 */
+.verify{margin-bottom:18px}
+.verify-done{display:flex;align-items:center;gap:13px;padding:15px 17px;border-radius:var(--r);
+  background:var(--surface-2)}
+.verify-done b{display:block;font-family:'Paperlogy',sans-serif;font-size:16px}
+.verify-done small{display:block;font-size:12.5px;color:var(--txt-3);margin-top:2px}
+.verify-need{padding:17px 19px;border-radius:var(--r);background:var(--pri-soft)}
+.verify-need b{font-family:'Paperlogy',sans-serif;font-size:15.5px}
+.verify-need p{margin-top:4px;font-size:14px;color:var(--txt-2)}
+.verify-need .btn{margin-top:13px}
+.verify-code{padding:17px 19px;border-radius:var(--r);background:var(--surface-2)}
+.vc-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vc-head b{font-family:'Paperlogy',sans-serif;font-size:15px}
+.vc-timer{font-size:13px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+.vc-cmd{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+  margin-top:12px;padding:14px 16px;border-radius:12px;background:var(--bg);cursor:pointer;
+  transition:background .2s;
+}
+.vc-cmd:hover{background:var(--surface-3)}
+.vc-cmd code{background:none;padding:0;color:var(--txt);font-size:19px;font-weight:700;letter-spacing:.5px}
+.vc-cmd i{color:var(--txt-3);font-size:14px}
+.verify-code p{margin-top:11px;font-size:13px;color:var(--txt-3)}
+
 .ready-list{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:var(--r);
   background:var(--surface-2)}
 .ready-item{display:flex;align-items:center;gap:11px;font-size:14.5px;color:var(--txt-2)}
@@ -722,17 +783,12 @@ main{animation:pageIn .28s var(--ease) both}
 /* =========================================================
    등장 애니메이션
    ========================================================= */
+/* 한 줄에 나란히 놓인 요소는 가운데를 기준으로 좌우 대칭으로 들어오고,
+   폭을 다 쓰는 요소는 블러가 걷히며 나타납니다. */
 .rv{opacity:0;transition:opacity .7s var(--ease),transform .7s var(--ease),filter .7s var(--ease)}
-.rv-up{transform:translateY(28px)}
-.rv-down{transform:translateY(-24px)}
-.rv-left{transform:translateX(-34px)}
-.rv-right{transform:translateX(34px)}
-.rv-zoom{transform:scale(.92)}
-.rv-blur{filter:blur(10px);transform:translateY(12px)}
-.rv-rise{transform:translateY(42px) scale(.96)}
-.rv-tilt{transform:perspective(900px) rotateX(12deg) translateY(24px);transform-origin:top center}
-.rv-flip{transform:perspective(900px) rotateY(-14deg) translateX(22px);transform-origin:left center}
-.rv-swing{transform:rotate(-2.5deg) translateY(26px) scale(.97);transform-origin:bottom left}
+.rv-left{transform:translateX(-36px);filter:blur(6px)}
+.rv-right{transform:translateX(36px);filter:blur(6px)}
+.rv-blur{filter:blur(12px);transform:scale(1.02)}
 .rv.in{opacity:1;transform:none;filter:none}
 
 @media (prefers-reduced-motion:reduce){
@@ -757,6 +813,7 @@ main{animation:pageIn .28s var(--ease) both}
   .feature.rev .f-media{order:0}
   .f-body{padding:32px 26px}
   .f-body h2{font-size:25px}
+  .play-grid{grid-template-columns:1fr;gap:44px;padding-top:44px}
   .guide{grid-template-columns:1fr;gap:0}
   .toc{display:none}
   .toc-mobile{display:block;position:sticky;top:var(--header-h);z-index:50;margin-bottom:24px;padding:12px 0;

@@ -990,21 +990,35 @@ function initScopedPills() {
    등장 애니메이션
    ========================================================= */
 function initReveal() {
-  const ANIMS = ['rv-up','rv-zoom','rv-left','rv-blur','rv-right','rv-tilt','rv-rise','rv-flip','rv-down','rv-swing'];
-  const SEL = '.s-head, .card, .stat, .notice, .tbl-card, .plan, .item, .cta, .podium, .seg, .news-item, .feature, .job, .match, .step-row, .play-ip, .panel, .auth-card';
+  const SEL = '.s-head, .card, .stat, .notice, .tbl-card, .plan, .item, .cta, .podium, .seg, .news-item, .feature, .job, .match, .step-row, .play-ip, .panel, .auth-card, .connect, .faq-item';
 
-  const groups = new Map();
+  /* 요소가 놓인 위치를 보고 방향을 정합니다.
+     한 줄에 나란히 있으면 가운데 기준 좌우 대칭으로,
+     폭을 거의 다 쓰는 요소는 블러로 나타납니다.
+     같은 거리에 있는 짝은 지연 시간도 같아서 좌우가 동시에 들어옵니다. */
   $$(SEL).forEach((el) => {
-    const key = el.closest('.section, .page-head, footer') || document.body;
-    groups.set(key, [...(groups.get(key) || []), el]);
-  });
-  let seed = 0;
-  groups.forEach((list) => {
-    const off = seed++ * 3;
-    list.forEach((el, i) => {
-      el.classList.add('rv', ANIMS[(i + off) % ANIMS.length]);
-      el.style.transitionDelay = Math.min(i, 6) * 60 + 'ms';
-    });
+    const parent = el.parentElement;
+    if (!parent) return;
+    const pr = parent.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+
+    if (!r.width || !pr.width || r.width > pr.width * 0.72) {
+      el.classList.add('rv', 'rv-blur');
+      el.style.transitionDelay = '0ms';
+      return;
+    }
+
+    const offset = r.left + r.width / 2 - (pr.left + pr.width / 2);
+    const ratio = Math.min(1, Math.abs(offset) / (pr.width / 2));
+
+    if (ratio < 0.08) {
+      el.classList.add('rv', 'rv-blur');
+      el.style.transitionDelay = '0ms';
+    } else {
+      el.classList.add('rv', offset < 0 ? 'rv-left' : 'rv-right');
+      // 가운데에서 먼 것일수록 조금 늦게 — 좌우 짝은 같은 값이 됩니다.
+      el.style.transitionDelay = Math.round(ratio * 3) * 70 + 'ms';
+    }
   });
 
   const all = $$('.rv');
