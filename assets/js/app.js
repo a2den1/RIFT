@@ -88,6 +88,8 @@ function renderPage() {
   renderHomeBoards();
   renderRanking();
   initGuide();
+  window.initProfilePage && window.initProfilePage();
+  $$('#clubMount').forEach((el) => window.mountClub && window.mountClub(el));
   initScopedPills();
 
   $$('[data-plan]').forEach((b) =>
@@ -101,7 +103,7 @@ function renderPage() {
    탭 전환 — 헤더를 그대로 두고 본문만 교체합니다.
    페이지마다 전체를 새로 읽으면 헤더가 매번 깜빡이기 때문입니다.
    ========================================================= */
-const SPA_PAGES = ['index.html', 'play.html', 'guide.html', 'league.html', 'ranking.html', 'support.html'];
+const SPA_PAGES = ['index.html', 'play.html', 'guide.html', 'league.html', 'ranking.html', 'support.html', 'profile.html'];
 const pageOf = (url) => {
   try {
     return new URL(url, location.href).pathname.split('/').pop() || 'index.html';
@@ -186,6 +188,23 @@ function initHeader() {
   }
   markCurrentTab();
 }
+
+/* 이미지 파일을 Supabase Storage 에 올리고 공개 주소를 돌려줍니다. */
+window.riftUpload = async function (file, folder) {
+  if (!file.type.startsWith('image/')) throw new Error('이미지 파일만 올릴 수 있습니다.');
+  if (file.size > 10 * 1024 * 1024) throw new Error('10MB 이하만 올릴 수 있습니다.');
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await RIFT.client.storage.from('site').upload(path, file);
+  if (error) {
+    throw new Error(
+      /Bucket not found/i.test(error.message)
+        ? 'site 버킷이 없습니다. supabase/add-storage.sql 을 실행해 주세요.'
+        : error.message
+    );
+  }
+  return RIFT.client.storage.from('site').getPublicUrl(path).data.publicUrl;
+};
 
 function bindCopy() {
   $$('[data-copy-btn]').forEach((b) => {
