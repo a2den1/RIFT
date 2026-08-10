@@ -16,27 +16,44 @@
      사이트에서 코드를 받고, 게임 안에서 /웹인증 <코드> 를 쳐야 연결됩니다.
      게임에 접속할 수 있는 사람만 자기 닉네임을 등록할 수 있습니다.
      ========================================================= */
-  function paintVerify(sb, profile) {
+  const verified = (box, name, auto) => {
+    box.innerHTML = `
+      <div class="verify-done">
+        <span class="ok-dot"><i class="fa-solid fa-check"></i></span>
+        <div class="grow">
+          <b>${esc(name)}</b>
+          <small>${auto
+            ? '게임 내 디스코드 연동 기록을 확인해 자동으로 인증했습니다.'
+            : '인증된 마인크래프트 계정입니다. 바꾸려면 관리자에게 문의해 주세요.'}</small>
+        </div>
+      </div>`;
+  };
+
+  async function paintVerify(sb, profile) {
     const box = document.getElementById('verifyBox');
     if (!box) return;
     clearInterval(pollTimer);
 
-    if (profile.mc_name) {
-      box.innerHTML = `
-        <div class="verify-done">
-          <span class="ok-dot"><i class="fa-solid fa-check"></i></span>
-          <div class="grow">
-            <b>${esc(profile.mc_name)}</b>
-            <small>인증된 마인크래프트 계정입니다. 바꾸려면 관리자에게 문의해 주세요.</small>
-          </div>
-        </div>`;
+    if (profile.mc_name) return verified(box, profile.mc_name, false);
+
+    // 게임에서 이미 /디스코드연동 을 마쳤다면 코드 입력 없이 바로 붙습니다.
+    box.innerHTML = `<div class="verify-need"><b>마인크래프트 계정 확인 중…</b></div>`;
+    const { data: auto } = await sb.rpc('try_auto_link');
+    if (auto && auto.ok && auto.name) {
+      profile.mc_name = auto.name;
+      verified(box, auto.name, !!auto.auto);
+      if (auto.auto) {
+        toast(`${auto.name} 계정을 자동으로 연결했습니다.`);
+        document.getElementById('meName').textContent = auto.name;
+      }
       return;
     }
 
     box.innerHTML = `
       <div class="verify-need">
         <b>마인크래프트 계정을 연결해 주세요</b>
-        <p>닉네임은 직접 입력할 수 없습니다. 게임 안에서 인증해야 등록됩니다.</p>
+        <p>닉네임은 직접 입력할 수 없습니다. 게임 안에서 인증해야 등록됩니다.<br>
+           게임에서 <code>/디스코드연동</code> 을 이미 하셨다면 여기서 자동으로 연결됩니다.</p>
         <button class="btn btn-primary btn-sm" id="verifyStart">인증 코드 받기</button>
       </div>`;
 
@@ -169,7 +186,7 @@
     requestAnimationFrame(() => (document.getElementById('xpFill').style.width = b.pct + '%'));
 
     /* ---------- 마인크래프트 계정 인증 ---------- */
-    paintVerify(sb, profile);
+    await paintVerify(sb, profile);
 
     /* ---------- 수정 ---------- */
     const form = document.getElementById('profileForm');

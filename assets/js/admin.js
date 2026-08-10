@@ -63,6 +63,7 @@ addEventListener('unhandledrejection', (e) => {
     ['tab_locks', 'add-images-locks.sql'],
     ['profiles', 'add-profiles.sql'],
     ['transfers', 'add-profiles.sql'],
+    ['mc_verifications', 'add-mc-verify.sql'],
   ];
 
   // rpc 는 없으면 "Could not find" 오류가 납니다. 권한 거부는 존재한다는 뜻입니다.
@@ -73,6 +74,8 @@ addEventListener('unhandledrejection', (e) => {
     ['decide_transfer', { p_id: '00000000-0000-0000-0000-000000000000', p_accept: false }, 'add-profiles.sql'],
     ['leave_club', {}, 'add-profiles.sql'],
     ['set_club_logo', { p_logo: '' }, 'add-profiles.sql'],
+    ['request_mc_code', {}, 'add-mc-verify.sql'],
+    ['try_auto_link', {}, 'add-auto-link.sql'],
   ];
 
   async function checkTables() {
