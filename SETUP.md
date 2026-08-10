@@ -18,16 +18,27 @@ Supabase를 연결하지 않아도 사이트는 `assets/js/data.js` 의 샘플 �
 
 ## 2단계 — 테이블과 권한 만들기 (SQL)
 
-1. 왼쪽 메뉴 **SQL Editor** → **New query**
-2. `supabase/schema.sql` 파일 내용을 **전부 복사해서 붙여넣기**
-3. 오른쪽 아래 **Run** (또는 `Ctrl+Enter`)
-4. `Success. No rows returned` 이 나오면 성공입니다.
-5. 이어서 아래 파일도 같은 방법으로 실행합니다.
-   - `supabase/add-images-locks.sql` — 이미지 교체, 탭 잠금
-   - `supabase/add-storage.sql` — 이미지 **파일 업로드** (Storage 버킷)
-   - `supabase/add-profiles.sql` — 프로필, 구단 생성, 이적
+**[`supabase/ALL.sql`](supabase/ALL.sql) 하나만 실행하면 됩니다.**
 
-> 무엇이 빠졌는지는 관리자 페이지의 **설정 점검** 패널에서 항목별로 확인할 수 있습니다.
+1. 왼쪽 메뉴 **SQL Editor** → **New query**
+2. `supabase/ALL.sql` 내용을 **전부 복사해서 붙여넣기**
+3. 오른쪽 아래 **Run** (또는 `Ctrl+Enter`)
+4. 맨 아래에 `admins` 목록이 표로 나오면 성공입니다.
+
+여러 번 실행해도 안전하고, 기존 데이터는 지워지지 않습니다.
+무엇이 빠졌는지는 관리자 페이지의 **설정 점검** 패널에서 항목별로 확인할 수 있습니다.
+
+<details>
+<summary>나눠진 파일들 (참고용)</summary>
+
+`ALL.sql` 은 아래 파일들을 순서대로 합친 것입니다. 따로 실행할 필요는 없습니다.
+
+- `schema.sql` — 기본 테이블과 RLS
+- `fix-admin.sql` — 권한 판정 함수
+- `add-images-locks.sql` — 이미지 교체, 탭 잠금
+- `add-storage.sql` — 파일 업로드용 스토리지
+- `add-profiles.sql` — 프로필, 구단 생성, 이적
+</details>
 
 ### 프로필과 구단에 적용되는 규칙
 
