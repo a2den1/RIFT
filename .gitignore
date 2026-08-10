@@ -10,5 +10,3 @@ desktop.ini
 
 # 로컬 실행 설정
 .claude/
-# 12MB 원본 영상은 저장소에 넣지 않습니다 (git-lfs 없이 커밋하기엔 큼)
-assets/video/
