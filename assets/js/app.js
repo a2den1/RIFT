@@ -990,7 +990,7 @@ function initScopedPills() {
    등장 애니메이션
    ========================================================= */
 function initReveal() {
-  const SEL = '.s-head, .card, .stat, .notice, .tbl-card, .plan, .item, .cta, .podium, .seg, .news-item, .feature, .job, .match, .step-row, .play-ip, .panel, .auth-card, .connect, .faq-item';
+  const SEL = '.s-head, .card, .stat, .notice, .tbl-card, .plan, .item, .cta, .podium, .seg, .news-item, .feature, .job, .match, .play-ip, .panel, .auth-card';
 
   /* 요소가 놓인 위치를 보고 방향을 정합니다.
      한 줄에 나란히 있으면 가운데 기준 좌우 대칭으로,
