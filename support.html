@@ -37,102 +37,97 @@
   </div>
 </header>
 
-<main>
+<main class="wrap">
 
-<!-- 상단 안내 줄 -->
-<div class="shop-bar">
-  <div class="wrap shop-bar-in">
-    <p><i class="fa-solid fa-gift"></i> 베타 기간에는 구단을 무료로 창설할 수 있습니다. 프리시즌부터 결제가 필요합니다.</p>
-    <a href="guide#club" class="btn btn-soft btn-sm">구단 안내 보기</a>
-  </div>
-</div>
-
-<div class="wrap">
-
-  <div class="shop-head">
+<div class="page-head">
+  <div class="page-head-row">
     <h1>후원</h1>
     <span class="coin-chip" id="shopCoin" hidden></span>
   </div>
-  <p class="shop-sub">후원금은 서버 운영과 리그 유지에 씁니다. 게임 밸런스에 직접 개입하는 상품은 팔지 않습니다.</p>
-
-  <!-- 큰 배너 -->
-  <section class="shop-hero" id="shopHero">
-    <div class="shop-hero-in">
-      <div class="shop-hero-txt">
-        <h2>시즌 1 후원</h2>
-        <p>정기 후원으로 서버와 리그를 함께 굴립니다.</p>
-      </div>
-      <a href="#plans" class="btn btn-primary">후원 등급 보기</a>
-    </div>
-  </section>
-
-  <!-- 상품 줄 -->
-  <section class="section">
-    <div class="s-head shop-row-head">
-      <h2>개별 상품</h2>
-      <div class="shop-arrows">
-        <button class="shop-arrow" data-shop-scroll="-1" aria-label="이전"><i class="fa-solid fa-arrow-left"></i></button>
-        <button class="shop-arrow" data-shop-scroll="1" aria-label="다음"><i class="fa-solid fa-arrow-right"></i></button>
-      </div>
-    </div>
-    <div class="shop-rail" id="shopRail"></div>
-  </section>
-
-  <!-- 후원 등급 -->
-  <section class="section" id="plans">
-    <div class="s-head"><h2>정기 후원</h2><p>매달 갱신되며 언제든 해지할 수 있습니다.</p></div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-name">서포터</div>
-        <div class="plan-price">5,000<span>원</span></div>
-        <ul class="list">
-          <li><i class="fa-solid fa-check"></i> 서포터 채팅 태그</li>
-          <li><i class="fa-solid fa-check"></i> <code>/home</code> 슬롯 +2</li>
-          <li><i class="fa-solid fa-check"></i> 디스코드 후원자 역할</li>
-        </ul>
-        <button class="btn btn-soft full" data-plan="서포터">후원하기</button>
-      </div>
-      <div class="plan best">
-        <span class="plan-tag">가장 많이 선택</span>
-        <div class="plan-name">엘리트</div>
-        <div class="plan-price">15,000<span>원</span></div>
-        <ul class="list">
-          <li><i class="fa-solid fa-check"></i> 엘리트 채팅 태그</li>
-          <li><i class="fa-solid fa-check"></i> <code>/home</code> 슬롯 +5</li>
-          <li><i class="fa-solid fa-check"></i> 금고 용량 확장</li>
-          <li><i class="fa-solid fa-check"></i> 커스텀 칭호 1개</li>
-        </ul>
-        <button class="btn btn-primary full" data-plan="엘리트">후원하기</button>
-      </div>
-      <div class="plan">
-        <div class="plan-name">구단 창설</div>
-        <div class="plan-price">30,000<span>원</span></div>
-        <ul class="list">
-          <li><i class="fa-solid fa-check"></i> 구단 창설권 1회</li>
-          <li><i class="fa-solid fa-check"></i> 구단 엠블럼 등록</li>
-          <li><i class="fa-solid fa-check"></i> 초기 구단 자금 지원</li>
-          <li><i class="fa-solid fa-circle-info"></i> 베타 기간에는 무료 창설 가능</li>
-        </ul>
-        <button class="btn btn-soft full" data-plan="구단 창설">후원하기</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 큰 카드 두 장 -->
-  <section class="section">
-    <div class="shop-promos">
-      <a class="shop-promo" href="league" data-promo="shop_promo_1">
-        <div class="shop-promo-art"><i class="fa-solid fa-shield-halved"></i></div>
-        <div class="shop-promo-txt"><h3>공식 리그</h3><span class="btn btn-soft btn-sm">보러 가기</span></div>
-      </a>
-      <a class="shop-promo" href="#" data-discord data-promo="shop_promo_2">
-        <div class="shop-promo-art"><i class="fa-brands fa-discord"></i></div>
-        <div class="shop-promo-txt"><h3>결제 · 환불 문의</h3><span class="btn btn-soft btn-sm">디스코드로</span></div>
-      </a>
-    </div>
-  </section>
-
+  <p>후원금은 서버 운영과 리그 유지에 씁니다. 게임 밸런스에 직접 개입하는 상품은 팔지 않습니다.</p>
 </div>
+
+<!-- 배너는 관리자가 그림을 넣었을 때만 나옵니다 -->
+<section class="shop-hero" id="shopHero" hidden>
+  <div class="shop-hero-in">
+    <div>
+      <h2 id="shopHeroTitle">시즌 1 후원</h2>
+      <p>정기 후원으로 서버와 리그를 함께 굴립니다.</p>
+    </div>
+    <a href="#plans" class="btn btn-primary">후원 등급 보기</a>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="s-head">
+    <h2>개별 상품</h2>
+    <p>필요한 것만 하나씩 구매할 수 있습니다. 상품을 누르면 자세한 내용이 나옵니다.</p>
+  </div>
+  <div class="shop-grid" id="shopGrid"></div>
+</section>
+
+<section class="section">
+  <div class="shop-promos">
+    <a class="shop-promo" href="league" data-promo="shop_promo_1">
+      <div class="shop-promo-art"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="shop-promo-txt">
+        <h3>공식 리그</h3>
+        <p>7vs7 정규 시즌과 구단 순위</p>
+        <span class="card-link">보러 가기 <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+    <a class="shop-promo" href="#" data-discord data-promo="shop_promo_2">
+      <div class="shop-promo-art"><i class="fa-brands fa-discord"></i></div>
+      <div class="shop-promo-txt">
+        <h3>결제 · 환불 문의</h3>
+        <p>지급과 환불은 디스코드에서 처리합니다</p>
+        <span class="card-link">디스코드로 <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section class="section" id="plans">
+  <div class="s-head">
+    <h2>정기 후원</h2>
+    <p>매달 갱신되며 언제든 해지할 수 있습니다.</p>
+  </div>
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-name">서포터</div>
+      <div class="plan-price">5,000<span>원</span></div>
+      <ul class="list">
+        <li><i class="fa-solid fa-check"></i> 서포터 채팅 태그</li>
+        <li><i class="fa-solid fa-check"></i> <code>/home</code> 슬롯 +2</li>
+        <li><i class="fa-solid fa-check"></i> 디스코드 후원자 역할</li>
+      </ul>
+      <button class="btn btn-soft full" data-plan="서포터">후원하기</button>
+    </div>
+    <div class="plan best">
+      <span class="plan-tag">가장 많이 선택</span>
+      <div class="plan-name">엘리트</div>
+      <div class="plan-price">15,000<span>원</span></div>
+      <ul class="list">
+        <li><i class="fa-solid fa-check"></i> 엘리트 채팅 태그</li>
+        <li><i class="fa-solid fa-check"></i> <code>/home</code> 슬롯 +5</li>
+        <li><i class="fa-solid fa-check"></i> 금고 용량 확장</li>
+        <li><i class="fa-solid fa-check"></i> 커스텀 칭호 1개</li>
+      </ul>
+      <button class="btn btn-primary full" data-plan="엘리트">후원하기</button>
+    </div>
+    <div class="plan">
+      <div class="plan-name">구단 창설</div>
+      <div class="plan-price">30,000<span>원</span></div>
+      <ul class="list">
+        <li><i class="fa-solid fa-check"></i> 구단 창설권 1회</li>
+        <li><i class="fa-solid fa-check"></i> 구단 엠블럼 등록</li>
+        <li><i class="fa-solid fa-check"></i> 초기 구단 자금 지원</li>
+        <li><i class="fa-solid fa-circle-info"></i> 베타 기간에는 무료 창설 가능</li>
+      </ul>
+      <button class="btn btn-soft full" data-plan="구단 창설">후원하기</button>
+    </div>
+  </div>
+</section>
 
 </main>
 

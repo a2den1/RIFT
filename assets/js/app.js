@@ -331,42 +331,52 @@ function initToast() {
 /* =========================================================
    후원 상점
    상품 그림은 관리자가 이미지 교체에서 넣습니다.
-   아직 없으면 아이콘만 있는 판을 보여 줍니다.
+   아직 없으면 아이콘만 보여 주고, 그림이 들어오면 그림이 위에 깔립니다.
    ========================================================= */
 const SHOP_ITEMS = [
-  { key: 'shop_1', icon: 'fa-vault', name: '금고 확장', desc: '보관 칸 +27', price: 4000 },
-  { key: 'shop_2', icon: 'fa-house', name: '홈 슬롯 추가', desc: '/home 위치 +1', price: 2000 },
-  { key: 'shop_3', icon: 'fa-tag', name: '커스텀 칭호', desc: '이름 앞에 붙는 칭호', price: 5000 },
-  { key: 'shop_4', icon: 'fa-shield-halved', name: '구단 엠블럼 교체', desc: '리그 표기에 반영', price: 3000 },
+  {
+    key: 'shop_1', icon: 'fa-vault', name: '금고 확장', desc: '보관 칸을 27칸 늘립니다.', price: 4000,
+    lines: ['개인 금고 +27칸', '한 계정에 최대 3회까지', '서버를 옮겨도 유지됩니다'],
+  },
+  {
+    key: 'shop_2', icon: 'fa-house', name: '홈 슬롯 추가', desc: '/home 으로 저장할 위치를 늘립니다.', price: 2000,
+    lines: ['/home 위치 +1', '한 계정에 최대 5회까지', '이름은 자유롭게 정할 수 있습니다'],
+  },
+  {
+    key: 'shop_3', icon: 'fa-tag', name: '커스텀 칭호', desc: '이름 앞에 붙는 칭호를 만듭니다.', price: 5000,
+    lines: ['최대 8자, 색 1가지', '채팅과 접속 알림에 표시', '부적절한 문구는 반려될 수 있습니다'],
+  },
+  {
+    key: 'shop_4', icon: 'fa-shield-halved', name: '구단 엠블럼 교체', desc: '구단 로고를 다시 등록합니다.', price: 3000,
+    lines: ['구단주만 신청할 수 있습니다', '리그 표와 홈 화면에 바로 반영', '시즌 중에도 교체 가능'],
+  },
 ];
 
 function renderShop() {
-  const rail = $('#shopRail');
-  if (!rail) return;
+  const grid = $('#shopGrid');
+  if (!grid) return;
 
-  const art = (key, icon) => {
-    const url = RIFT.image(key);
-    return url
-      ? `<img class="shop-art" src="${url}" alt="" loading="lazy" onerror="this.remove()">`
-      : `<div class="shop-art shop-art-none"><i class="fa-solid ${icon}"></i></div>`;
-  };
-
-  rail.innerHTML = SHOP_ITEMS.map(
-    (it) => `
-    <button class="shop-card" data-plan="${it.name}">
-      ${art(it.key, it.icon)}
+  grid.innerHTML = SHOP_ITEMS.map((it) => {
+    const url = RIFT.image(it.key);
+    return `
+    <button class="shop-card" data-item="${it.key}">
+      ${url ? `<img class="shop-art" src="${url}" alt="" loading="lazy" onerror="this.remove()">` : ''}
       <div class="shop-card-txt">
+        ${url ? '' : `<span class="c-ic"><i class="fa-solid ${it.icon}"></i></span>`}
         <b>${it.name}</b>
         <small>${it.desc}</small>
         <span class="shop-price">${it.price.toLocaleString()}원</span>
       </div>
-    </button>`
-  ).join('');
+    </button>`;
+  }).join('');
 
-  // 배너와 큰 카드도 그림이 있으면 깔아 줍니다.
+  // 배너는 그림이 있을 때만 내보냅니다. 빈 검은 상자는 보여 주지 않습니다.
   const hero = $('#shopHero');
   const heroImg = RIFT.image('shop_hero');
-  if (hero && heroImg) hero.style.backgroundImage = `url("${heroImg}")`;
+  if (hero) {
+    hero.hidden = !heroImg;
+    if (heroImg) hero.style.backgroundImage = `url("${heroImg}")`;
+  }
 
   $$('[data-promo]').forEach((el) => {
     const url = RIFT.image(el.dataset.promo);
@@ -382,13 +392,105 @@ function renderShop() {
     chip.hidden = coin === null;
     if (coin !== null) chip.innerHTML = `<i class="fa-solid fa-coins"></i> ${coin.toLocaleString()}`;
   }
-
-  $$('[data-shop-scroll]').forEach((b) => {
-    if (b._bound) return;
-    b._bound = true;
-    b.addEventListener('click', () => rail.scrollBy({ left: +b.dataset.shopScroll * (rail.clientWidth * 0.8), behavior: 'smooth' }));
-  });
 }
+
+/* 상품을 누르면 자세한 내용을 모달로 보여 줍니다. */
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-item]');
+  if (!b) return;
+  const it = SHOP_ITEMS.find((x) => x.key === b.dataset.item);
+  if (!it) return;
+  const url = RIFT.image(it.key);
+  openModal({
+    cls: 'modal-item',
+    image: url || null,
+    html: `
+      <div class="item-head">
+        ${url ? '' : `<span class="c-ic"><i class="fa-solid ${it.icon}"></i></span>`}
+        <div>
+          <h2>${it.name}</h2>
+          <div class="shop-price">${it.price.toLocaleString()}원</div>
+        </div>
+      </div>
+      <p>${it.desc}</p>
+      <ul class="list item-lines">${it.lines.map((l) => `<li><i class="fa-solid fa-check"></i> ${l}</li>`).join('')}</ul>`,
+    buttons: `<a class="btn btn-primary btn-sm" href="${CFG.discordInvite}" target="_blank" rel="noopener noreferrer">디스코드로 문의</a>`,
+  });
+});
+
+/* =========================================================
+   공용 모달
+   진입 안내 · 상품 상세 · 시작하기가 모두 이걸 씁니다.
+   ========================================================= */
+function openModal({ cls = '', image = null, title = '', html = '', buttons = '', foot = '' }) {
+  closeModal();
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back';
+  wrap.id = 'riftModal';
+  wrap.innerHTML = `
+    <div class="modal ${cls}" role="dialog" aria-modal="true" aria-label="${esc(title || '안내')}">
+      ${image ? `<img class="modal-img" src="${esc(image)}" alt="" onerror="this.remove()">` : ''}
+      <div class="modal-body">
+        ${title ? `<h2>${esc(title)}</h2>` : ''}
+        ${html}
+      </div>
+      ${foot || buttons ? `<div class="modal-foot">${foot}<div class="modal-btns">${buttons}
+        <button class="btn btn-soft btn-sm" data-modal-close>닫기</button></div></div>` : ''}
+      <button class="modal-x" data-modal-close aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+    </div>`;
+
+  wrap.addEventListener('click', (e) => {
+    if (e.target === wrap || e.target.closest('[data-modal-close]')) closeModal();
+  });
+  document.body.appendChild(wrap);
+  document.body.style.overflow = 'hidden';
+  // rAF 는 탭이 뒤에 있으면 멈추므로 타이머로 켭니다.
+  setTimeout(() => wrap.classList.add('show'), 20);
+  return wrap;
+}
+
+function closeModal() {
+  const wrap = $('#riftModal');
+  if (!wrap) return;
+  wrap.dispatchEvent(new CustomEvent('rift:modalclose'));
+  wrap.classList.remove('show');
+  setTimeout(() => wrap.remove(), 220);
+  document.body.style.overflow = '';
+}
+addEventListener('keydown', (e) => e.key === 'Escape' && closeModal());
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+/* =========================================================
+   시작하기 — 탭을 옮기지 않고 접속 방법을 바로 띄웁니다.
+   ========================================================= */
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-start]');
+  if (!b) return;
+  e.preventDefault();
+  openModal({
+    title: '서버 접속하기',
+    html: `
+      <ol class="start-steps">
+        <li><b>마인크래프트 ${CFG.version} 실행</b><small>자바 에디션이 필요합니다.</small></li>
+        <li><b>멀티플레이 → 서버 추가</b><small>서버 이름은 자유롭게 정하세요.</small></li>
+        <li>
+          <b>서버 주소 입력</b>
+          <div class="start-ip">
+            <code data-copy-ip></code>
+            <button class="btn btn-soft btn-sm" data-copy-btn><i class="fa-regular fa-copy"></i> 복사</button>
+          </div>
+        </li>
+        <li><b>접속 후 <code>/직업</code></b><small>직업은 한 번 고르면 바꿀 수 없습니다.</small></li>
+      </ol>`,
+    buttons: `<a class="btn btn-primary btn-sm" href="guide">도움말 보기</a>`,
+  });
+  $$('[data-copy-ip]').forEach((el) => (el.textContent = CFG.serverIp));
+  $$('[data-version]').forEach((el) => (el.textContent = CFG.version));
+  bindCopy();
+});
 
 /* =========================================================
    디스코드 문법 → HTML
@@ -400,11 +502,11 @@ function discordMd(src) {
   if (!src) return '';
   const holds = [];
   // 본문에 나올 일이 없는 사용자 영역 문자를 자리표시로 씁니다.
-  const P0 = '', P1 = '';
+  const P0 = '\uE000', P1 = '\uE001';
   const hold = (html) => P0 + (holds.push(html) - 1) + P1;
 
   let s = String(src)
-    .replace(/[ ]/g, '') // 자리표시 문자가 섞여 들어오지 못하게
+    .replace(/[\uE000\uE001]/g, '') // 자리표시 문자가 섞여 들어오지 못하게
     .replace(/\r\n/g, '\n')
     .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -462,51 +564,25 @@ window.discordMd = discordMd;
 function showSiteModal() {
   const m = RIFT.modal;
   if (!m || !m.enabled) return;
-  if (document.getElementById('siteModal')) return;
   const key = 'rift.modal.seen';
   if (localStorage.getItem(key) === String(m.version)) return;
 
-  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '');
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  const wrap = document.createElement('div');
-  wrap.className = 'modal-back';
-  wrap.id = 'siteModal';
-  wrap.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(m.title || '안내')}">
-      ${safeUrl(m.image_url) ? `<img class="modal-img" src="${esc(m.image_url)}" alt="" onerror="this.remove()">` : ''}
-      <div class="modal-body">
-        ${m.title ? `<h2>${esc(m.title)}</h2>` : ''}
-        <div class="md">${discordMd(m.body)}</div>
-      </div>
-      <div class="modal-foot">
-        <label class="modal-again"><input type="checkbox" id="modalAgain"> 다시 보지 않기</label>
-        <div class="modal-btns">
-          ${m.button_label && safeUrl(m.button_url)
-            ? `<a class="btn btn-primary btn-sm" href="${esc(m.button_url)}" target="_blank" rel="noopener noreferrer">${esc(m.button_label)}</a>` : ''}
-          <button class="btn btn-soft btn-sm" id="modalClose">닫기</button>
-        </div>
-      </div>
-      <button class="modal-x" id="modalX" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
-    </div>`;
-
-  const close = () => {
-    if (document.getElementById('modalAgain')?.checked) localStorage.setItem(key, String(m.version));
-    wrap.classList.remove('show');
-    setTimeout(() => wrap.remove(), 200);
-    document.body.style.overflow = '';
-  };
-  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
-  wrap.querySelector('#modalClose').addEventListener('click', close);
-  wrap.querySelector('#modalX').addEventListener('click', close);
-  addEventListener('keydown', function esckey(e) {
-    if (e.key === 'Escape') { close(); removeEventListener('keydown', esckey); }
+  const wrap = openModal({
+    image: safeUrl(m.image_url) || null,
+    title: m.title || '',
+    html: `<div class="md">${discordMd(m.body)}</div>`,
+    foot: `<label class="modal-again"><input type="checkbox" id="modalAgain"> 다시 보지 않기</label>`,
+    buttons: m.button_label && safeUrl(m.button_url)
+      ? `<a class="btn btn-primary btn-sm" href="${esc(m.button_url)}" target="_blank" rel="noopener noreferrer">${esc(m.button_label)}</a>`
+      : '',
   });
 
-  document.body.appendChild(wrap);
-  document.body.style.overflow = 'hidden';
-  // rAF 는 탭이 뒤에 있으면 멈추므로 타이머로 켭니다.
-  setTimeout(() => wrap.classList.add('show'), 20);
+  wrap.addEventListener('rift:modalclose', () => {
+    if (wrap.querySelector('#modalAgain')?.checked) localStorage.setItem(key, String(m.version));
+  });
 }
 window.showSiteModal = showSiteModal;
 
