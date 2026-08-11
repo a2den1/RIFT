@@ -49,15 +49,26 @@
     const owned = list.find((c) => c.owner_id === RIFT.user.id);
     const myReq = myReqRes.data || [];
 
-    const reqHtml = (myReq || []).length
+    // 승인돼도 게임 서버가 소속을 바꿔 줘야 끝납니다. 그 사이 상태를 따로 보여 줍니다.
+    const stateOf = (t) => {
+      if (t.status === 'pending') return { dot: 'wait-dot', icon: 'hourglass-half', text: '구단주 승인 대기 중' };
+      if (t.status !== 'accepted') return { dot: 'no-dot', icon: 'xmark', text: '거절됨' };
+      return t.applied_at
+        ? { dot: 'ok-dot', icon: 'check', text: '이적 완료' }
+        : { dot: 'wait-dot', icon: 'rotate', text: '승인됨 · 게임 서버 반영 대기 중' };
+    };
+
+    const reqHtml = myReq.length
       ? `<h3 class="club-h3">내 이적 신청</h3>
-         <div class="rows">${myReq.map((t) => `
+         <div class="rows">${myReq.map((t) => {
+           const st = stateOf(t);
+           return `
            <div class="row-item">
-             <span class="${t.status === 'accepted' ? 'ok-dot' : t.status === 'pending' ? 'wait-dot' : 'no-dot'}">
-               <i class="fa-solid fa-${t.status === 'accepted' ? 'check' : t.status === 'pending' ? 'hourglass-half' : 'xmark'}"></i></span>
+             <span class="${st.dot}"><i class="fa-solid fa-${st.icon}"></i></span>
              <div class="grow"><b>${esc(t.to_club)}</b>
-               <small>${t.status === 'pending' ? '대기 중' : t.status === 'accepted' ? '승인됨' : '거절됨'}${t.note ? ' · ' + esc(t.note) : ''}</small></div>
-           </div>`).join('')}</div>`
+               <small>${st.text}${t.note ? ' · ' + esc(t.note) : ''}</small></div>
+           </div>`;
+         }).join('')}</div>`
       : '';
 
     /* ---------- 소속이 있을 때 ---------- */
@@ -221,7 +232,9 @@
       b.disabled = false;
       const r = error ? { ok: false, error: error.message } : data;
       if (!r.ok) return toast(r.error);
-      toast(b.hasAttribute('data-accept') ? '영입했습니다.' : '거절했습니다.');
+      toast(b.hasAttribute('data-accept')
+        ? (r.pending_game ? '승인했습니다. 게임 서버에 반영되면 소속이 바뀝니다.' : '영입했습니다.')
+        : '거절했습니다.');
       refreshAll();
     });
 

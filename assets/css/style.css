@@ -1082,3 +1082,15 @@ img.shot{background:var(--surface-2)}
   width:4px;height:4px;border-radius:50%;background:var(--txt-3)}
 .doc.legal .lg-foot{margin-top:26px;padding-top:16px;background:none}
 .doc.legal .lg-foot p{font-size:13px;color:var(--txt-3);line-height:1.7}
+
+/* ---------- 내 순위 ---------- */
+.me-ranks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.me-ranks[hidden]{display:none}
+.me-rank{display:block;background:var(--surface-2);border-radius:12px;padding:12px 14px;
+  transition:background .18s}
+.me-rank:hover{background:var(--surface-3)}
+.me-rank small{display:block;font-size:12.5px;color:var(--txt-3)}
+.me-rank b{display:block;margin:2px 0 1px;font-family:'Paperlogy',sans-serif;
+  font-size:22px;font-weight:800;line-height:1.1}
+.me-rank b span{font-size:13px;font-weight:600;color:var(--txt-2);margin-left:2px}
+@media (max-width:760px){ .me-ranks{grid-template-columns:repeat(2,1fr)} }

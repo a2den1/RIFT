@@ -204,6 +204,22 @@
       }
     }
 
+    // 게임 서버가 매긴 내 순위. 기록이 없는 항목은 나오지 않습니다.
+    const ranks = RIFT.ranksOf(profile.mc_name);
+    const rankBox = document.getElementById('meRanks');
+    if (rankBox) {
+      rankBox.hidden = !ranks.length;
+      rankBox.innerHTML = ranks
+        .map(
+          (r) => `<a class="me-rank" href="ranking#${r.key}">
+             <small>${r.label}</small>
+             <b>${r.rank}<span>위</span></b>
+             <small class="muted">${(r.value || 0).toLocaleString()}${r.unit}</small>
+           </a>`
+        )
+        .join('');
+    }
+
     const b = RIFT.levelBand(profile.xp || 0);
     document.getElementById('xpLevel').textContent = `Lv. ${b.level}`;
     document.getElementById('xpText').textContent = `${(profile.xp || 0).toLocaleString()} / ${b.to.toLocaleString()} XP`;

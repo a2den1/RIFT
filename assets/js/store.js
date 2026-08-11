@@ -27,6 +27,17 @@
     ready: null,
   };
 
+  /* 구단 정렬 — 서버가 매긴 standing 을 우선하고, 없으면 승점 → 승 → 인지도 순.
+     둘이 섞여 있으면 순위가 있는 구단을 앞에 둡니다. */
+  const clubOrder = (a, b) => {
+    const ra = a.standing ?? Infinity;
+    const rb = b.standing ?? Infinity;
+    if (ra !== rb) return ra - rb;
+    return (b.points || 0) - (a.points || 0)
+        || (b.wins || 0) - (a.wins || 0)
+        || (b.reputation || 0) - (a.reputation || 0);
+  };
+
   store.image = (key) => store.images[key] || CFG.images[key] || '';
   store.lockOf = (page) => store.locks.find((l) => l.page === page && l.locked) || null;
 
@@ -38,6 +49,19 @@
   store.coinOf = (mcName) => {
     const g = store.gameOf(mcName);
     return g && typeof g.money === 'number' ? g.money : null;
+  };
+
+  /* 내 랭킹. 게임 서버가 전체 인원을 놓고 매긴 값이라 여기서 다시 세지 않습니다.
+     아직 기록이 없는 항목은 순위 자체가 없으므로 빼고 돌려줍니다. */
+  store.ranksOf = (mcName) => {
+    const g = store.gameOf(mcName);
+    if (!g) return [];
+    return [
+      { key: 'kill', label: 'PVP 킬', rank: g.rank_kills, value: g.kills, unit: '킬' },
+      { key: 'time', label: '플레이타임', rank: g.rank_playtime, value: g.playtime, unit: '시간' },
+      { key: 'money', label: '게임머니', rank: g.rank_money, value: g.money, unit: '원' },
+      { key: 'bounty', label: '현상금', rank: g.rank_bounty, value: g.bounty, unit: '원' },
+    ].filter((r) => typeof r.rank === 'number' && r.rank > 0);
   };
 
   /* ---------- 경험치 ----------
@@ -115,7 +139,7 @@
         notices: SAMPLE.notices, events: SAMPLE.events, clubs: SAMPLE.clubs,
         matches: SAMPLE.matches, players: SAMPLE.players,
       });
-      store.clubs = [...store.clubs].sort((a, b) => b.wins - a.wins || b.reputation - a.reputation);
+      store.clubs = [...store.clubs].sort(clubOrder);
       return;
     }
 
@@ -158,7 +182,9 @@
     store.events = rows(events);
     store.matches = rows(matches);
     store.players = rows(players);
-    store.clubs = rows(clubs).sort((a, b) => b.wins - a.wins || b.reputation - a.reputation);
+    // 게임 서버가 매긴 순위가 있으면 그걸 그대로 씁니다.
+    // 승점·세트 득실까지 따진 값이라 여기서 다시 계산하면 오히려 어긋납니다.
+    store.clubs = rows(clubs).sort(clubOrder);
 
     // 접속자 수는 마인크래프트 서버가 갱신할 때만 표시합니다.
     store.onlineCount = null;
@@ -221,6 +247,7 @@
     { k: 'wins', label: '승', num: true },
     { k: 'losses', label: '패', num: true },
     { k: 'set_diff', label: '세트 득실', get: (c) => parseInt(c.set_diff, 10) || 0, num: true, raw: (c) => c.set_diff ?? '—' },
+    { k: 'points', label: '승점', num: true },
     { k: 'reputation', label: '인지도', num: true, bar: true },
     { k: 'titles', label: '우승', num: true },
   ];

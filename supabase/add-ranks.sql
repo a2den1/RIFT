@@ -29,10 +29,11 @@ create index if not exists players_rank_damage_idx   on public.players (rank_dam
 -- 2) 구단 — 순위와 구단 레벨
 --    순위 기준은 승 → 세트 득실 → 인지도 순입니다.
 -- ---------------------------------------------------------
-alter table public.clubs add column if not exists rank  int;
+-- 'rank' 은 PostgREST 가 집계함수 rank() 로 해석해 버려서 이름을 피했습니다.
+alter table public.clubs add column if not exists standing int;
 alter table public.clubs add column if not exists level int default 1;
 
-create index if not exists clubs_rank_idx on public.clubs (rank) where rank is not null;
+create index if not exists clubs_standing_idx on public.clubs (standing) where standing is not null;
 
 
 -- ---------------------------------------------------------
