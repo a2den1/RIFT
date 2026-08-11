@@ -54,13 +54,60 @@ function countUp(el, target) {
 document.addEventListener('DOMContentLoaded', async () => {
   initHeader();
   initToast();
-  await RIFT.ready;
-  initAuthUI();
   initHoverCard(); // 문서 위임이라 한 번만 등록합니다
   initNavPill();
   initRouter();
+  paintSkeletons(); // 데이터를 기다리는 동안 빈 화면 대신 자리표시를 먼저 그립니다
+  await RIFT.ready;
+  initAuthUI();
   renderPage();
 });
+
+/* 데이터가 들어오기 전에 채워 둘 회색 자리표시. */
+function paintSkeletons() {
+  const rows = (n, cols) =>
+    Array.from({ length: n }, () =>
+      `<tr><td colspan="${cols}"><div class="skel-row">
+         <span class="skel skel-dot"></span><span class="skel skel-av"></span>
+         <span class="skel skel-line" style="flex:1"></span>
+       </div></td></tr>`
+    ).join('');
+
+  const cards = (n, cls) =>
+    Array.from({ length: n }, () =>
+      `<div class="${cls}">
+         <span class="skel skel-line" style="width:40%"></span>
+         <span class="skel skel-line" style="width:85%"></span>
+         <span class="skel skel-line" style="width:60%"></span>
+       </div>`
+    ).join('');
+
+  const set = (sel, html) => {
+    const el = $(sel);
+    if (el && !el.children.length) el.innerHTML = html;
+  };
+
+  set('#homeClubs', rows(5, 4));
+  set('#homePlayers', rows(5, 4));
+  set('#standings', rows(6, 8));
+  set('#rankBody', rows(8, 6));
+  set('#news', cards(3, 'skel-card'));
+  set('#events', cards(2, 'skel-card'));
+  set('#matches', cards(3, 'skel-card'));
+  set('#clubMount', cards(1, 'skel-card'));
+
+  const podium = $('#podium');
+  if (podium && !podium.children.length) {
+    podium.innerHTML = [1, 0, 2]
+      .map((i) => `<div class="pod p${i + 1}">
+        <div class="pod-crown"></div>
+        <span class="skel pod-av"></span>
+        <span class="skel skel-line" style="width:70px;margin-top:11px"></span>
+        <div class="pod-block"></div>
+      </div>`)
+      .join('');
+  }
+}
 
 /* 페이지 본문에 필요한 렌더링. 탭을 옮길 때마다 다시 실행됩니다. */
 function renderPage() {
@@ -106,10 +153,14 @@ function renderPage() {
    탭 전환 — 헤더를 그대로 두고 본문만 교체합니다.
    페이지마다 전체를 새로 읽으면 헤더가 매번 깜빡이기 때문입니다.
    ========================================================= */
-const SPA_PAGES = ['index.html', 'play.html', 'guide.html', 'league.html', 'ranking.html', 'support.html', 'profile.html'];
+const SPA_PAGES = ['index', 'play', 'guide', 'league', 'ranking', 'support', 'profile'];
+
+/* 주소는 .html 없이 씁니다 (Vercel cleanUrls).
+   `/guide` `/guide.html` `/` 를 모두 같은 이름으로 맞춥니다. */
 const pageOf = (url) => {
   try {
-    return new URL(url, location.href).pathname.split('/').pop() || 'index.html';
+    const last = new URL(url, location.href).pathname.split('/').pop() || '';
+    return last.replace(/\.html$/, '') || 'index';
   } catch {
     return null;
   }
@@ -117,7 +168,8 @@ const pageOf = (url) => {
 
 function markCurrentTab() {
   const here = pageOf(location.href);
-  $$('#nav a').forEach((a) => a.classList.toggle('current', a.getAttribute('href') === here));
+  // 사이드바 계정 블록의 링크는 탭이 아니므로 직계 <a> 만 봅니다.
+  $$('#nav > a').forEach((a) => a.classList.toggle('current', pageOf(a.href) === here));
   $('#nav')?._pill?.toActive();
 }
 
@@ -125,7 +177,9 @@ async function navigate(url, push = true) {
   const main = $('main');
   if (!main) return void (location.href = url);
   try {
-    const res = await fetch(url);
+    // Vercel 은 /guide 로 guide.html 을 내려주지만, 로컬 정적 서버는 그렇지 않습니다.
+    let res = await fetch(url);
+    if (!res.ok) res = await fetch(url.replace(/\/?$/, '') + '.html');
     if (!res.ok) throw new Error(res.status);
     const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
     const fresh = doc.querySelector('main');
@@ -281,9 +335,9 @@ function initAuthUI() {
   const slot = $('#authSlot');
   const nav = $('#nav');
 
-  const here = location.pathname.split('/').pop() || '';
+  const here = pageOf(location.href);
   const addTab = (href, label, cls) => {
-    if (!nav || $(`a[href="${href}"]`, nav)) return;
+    if (!nav || $(`:scope > a[href="${href}"]`, nav)) return;
     const a = document.createElement('a');
     a.href = href;
     if (cls) a.className = cls;
@@ -292,8 +346,8 @@ function initAuthUI() {
     if (here === href) a.classList.add('current');
   };
 
-  if (RIFT.user) addTab('profile.html', '내 정보');
-  if (RIFT.isAdmin) addTab('admin.html', '관리자', 'admin-link');
+  if (RIFT.user) addTab('profile', '내 정보');
+  if (RIFT.isAdmin) addTab('admin', '관리자', 'admin-link');
 
   const m = (RIFT.user && RIFT.user.user_metadata) || {};
   const avatar = m.avatar_url || m.picture || '';
@@ -303,7 +357,7 @@ function initAuthUI() {
   // 로그아웃 버튼을 여기 붙이면 너무 작아서 잘못 누르기 쉽습니다.
   if (slot) {
     slot.innerHTML = RIFT.user
-      ? `<a href="profile.html" class="me" title="내 정보">
+      ? `<a href="profile" class="me" title="내 정보">
            <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
            <span>${escapeHtml(name)}</span>
          </a>
@@ -311,7 +365,7 @@ function initAuthUI() {
            <i class="fa-solid fa-arrow-right-from-bracket"></i>
            <span>로그아웃</span>
          </button>`
-      : `<a href="login.html" class="btn btn-soft btn-sm login-btn">로그인</a>`;
+      : `<a href="login" class="btn btn-soft btn-sm login-btn">로그인</a>`;
     $('#headerSignOut')?.addEventListener('click', confirmSignOut);
   }
 
@@ -322,12 +376,12 @@ function initAuthUI() {
     const acc = document.createElement('div');
     acc.className = 'nav-account';
     acc.innerHTML = RIFT.user
-      ? `<a href="profile.html" class="na-me">
+      ? `<a href="profile" class="na-me">
            <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
            <div><b>${escapeHtml(name)}</b><small>내 정보 보기</small></div>
            <i class="fa-solid fa-chevron-right"></i>
          </a>`
-      : `<a href="login.html" class="btn btn-primary full">
+      : `<a href="login" class="btn btn-primary full">
            <i class="fa-brands fa-discord"></i> 로그인
          </a>`;
     nav.prepend(acc);
@@ -369,13 +423,13 @@ function initHeroVideo() {
    관리자는 잠긴 탭도 볼 수 있고, 상단에 안내 띠만 표시됩니다.
    ========================================================= */
 function applyTabLock() {
-  const page = (location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '');
+  const page = pageOf(location.href);
 
   // 잠긴 탭은 내비에 자물쇠를 붙입니다.
   RIFT.locks
     .filter((l) => l.locked)
     .forEach((l) => {
-      const a = $(`#nav a[href="${l.page}.html"]`);
+      const a = $$('#nav > a').find((x) => pageOf(x.href) === l.page);
       if (a && !$('.lock-mark', a)) {
         a.classList.add('locked');
         a.insertAdjacentHTML('beforeend', ' <i class="fa-solid fa-lock lock-mark"></i>');
@@ -407,7 +461,7 @@ function applyTabLock() {
         <div class="lock-ic"><i class="fa-solid fa-lock"></i></div>
         <h1>탭이 막혀있습니다</h1>
         <p class="lock-reason">${lock.reason ? escapeHtml(lock.reason) : '사유가 등록되지 않았습니다.'}</p>
-        <a href="index.html" class="btn btn-primary">홈으로</a>
+        <a href="/" class="btn btn-primary">홈으로</a>
       </div>`;
   }
   return true;
@@ -1013,7 +1067,7 @@ function pillSetup(box, itemSel, mode) {
 
 function initNavPill() {
   const nav = $('#nav');
-  if (nav) pillSetup(nav, 'a', 'nav');
+  if (nav) pillSetup(nav, ':scope > a', 'nav');
   // 창 크기가 바뀌면 살아 있는 배경만 다시 계산합니다.
   addEventListener('resize', () =>
     $$('#nav, .seg, .toc').forEach((b) => b._pill && b._pill.toActive())

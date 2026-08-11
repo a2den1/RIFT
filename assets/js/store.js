@@ -42,6 +42,8 @@
   // 로그인한 사용자의 프로필 행을 확보합니다. 없으면 만들어 둡니다.
   store.ensureProfile = async () => {
     if (!sb || !store.user) return null;
+    // 첫 묶음에서 이미 받아 왔으면 그대로 씁니다.
+    if (store.profile) return store.profile;
     const { data } = await sb.from('profiles').select('*').eq('id', store.user.id).maybeSingle();
     if (data) {
       store.profile = data;
@@ -79,7 +81,7 @@
     if (!sb) throw new Error('Supabase가 설정되지 않았습니다.');
     return sb.auth.signInWithOAuth({
       provider: 'discord',
-      options: { redirectTo: location.origin + location.pathname.replace(/login\.html$/, 'index.html') },
+      options: { redirectTo: location.origin + '/' },
     });
   };
   store.signOut = async () => {
@@ -89,79 +91,91 @@
     location.reload();
   };
 
-  /* ---------- 조회 ---------- */
-  // Supabase에 연결돼 있으면 서버 값을 그대로 씁니다.
-  // 비어 있어도 샘플로 채우지 않습니다 — 실제로 없는 내용을 있는 것처럼 보이면 안 되니까.
-  async function pull(table, order, sample) {
-    if (!sb) return sample;
-    const q = sb.from(table).select('*');
-    if (order) q.order(order.col, { ascending: order.asc !== false });
-    const { data, error } = await q;
-    if (error) {
-      console.warn(`[RIFT] ${table} 불러오기 실패:`, error.message, '— 샘플 데이터를 사용합니다.');
-      return sample;
-    }
-    return data || [];
-  }
+  /* ---------- 조회 ----------
+     Supabase 에 연결돼 있으면 서버 값을 그대로 씁니다.
+     비어 있어도 샘플로 채우지 않습니다 — 실제로 없는 내용을 있는 것처럼 보이면 안 되니까.
 
+     필요한 값을 한 번에 요청합니다.
+     예전에는 순서대로 기다리느라 왕복이 5~6번 쌓여 1.4초 넘게 걸렸습니다.
+     한 묶음으로 보내면 가장 느린 하나만큼(약 0.2초)만 걸립니다. */
   store.ready = (async () => {
-    if (sb) {
-      const { data } = await sb.auth.getSession();
-      store.user = data.session?.user || null;
-      if (store.user) {
-        const name = discordName(store.user);
-        // RLS 와 같은 기준으로 판단하도록 DB 의 is_admin() 결과를 그대로 씁니다.
-        // 화면에서는 관리자인데 저장은 막히는(또는 그 반대) 상황을 없애기 위함입니다.
-        const { data: who, error } = await sb.rpc('whoami');
-        if (!error && who) {
-          store.whoami = who;
-          store.isAdmin = !!who.is_admin;
-        } else {
-          // whoami() 가 없는 예전 스키마 대비 — 클라이언트에서 같은 규칙으로 대조
-          const { data: rows } = await sb.from('admins').select('discord_username');
-          store.admins = rows || [];
-          store.isAdmin =
-            (rows || []).some((r) => norm(r.discord_username) === norm(name)) ||
-            norm(name) === norm(CFG.bootstrapAdmin);
-        }
-      }
+    if (!sb) {
+      Object.assign(store, {
+        notices: SAMPLE.notices, events: SAMPLE.events, clubs: SAMPLE.clubs,
+        matches: SAMPLE.matches, players: SAMPLE.players,
+      });
+      store.clubs = [...store.clubs].sort((a, b) => b.wins - a.wins || b.reputation - a.reputation);
+      return;
     }
 
-    const [notices, events, clubs, matches, players] = await Promise.all([
-      pull('notices', { col: 'created_at', asc: false }, SAMPLE.notices),
-      pull('events', { col: 'starts_at', asc: true }, SAMPLE.events),
-      pull('clubs', { col: 'reputation', asc: false }, SAMPLE.clubs),
-      pull('matches', { col: 'starts_at', asc: true }, SAMPLE.matches),
-      pull('players', { col: 'kills', asc: false }, SAMPLE.players),
-    ]);
-    Object.assign(store, { notices, events, clubs, matches, players });
+    // 세션은 localStorage 에서 읽어 오므로 네트워크를 타지 않습니다.
+    const { data: sess } = await sb.auth.getSession();
+    store.user = sess.session?.user || null;
+    store.discordName = discordName(store.user);
 
-    // 접속자 수는 마인크래프트 서버가 server_status 테이블을 갱신할 때만 표시합니다.
-    // 테이블이 없거나 비어 있으면 null 로 두고 화면에서 숨깁니다.
-    if (sb) {
-      store.onlineCount = null;
-      const { data } = await sb.from('server_status').select('online_count').limit(1);
-      if (data && data.length) store.onlineCount = data[0].online_count;
+    const rows = (r, sample) => {
+      if (r.error) {
+        console.warn('[RIFT] 불러오기 실패:', r.error.message);
+        return sample || [];
+      }
+      return r.data || [];
+    };
 
-        // 프로필의 대명사를 랭킹 호버 카드에도 보여줍니다.
-      const { data: profs } = await sb.from('profiles').select('mc_name,pronouns,club,job');
-      (profs || []).forEach((pr) => {
-        const p = store.players.find((x) => x.name === pr.mc_name);
-        if (p && pr.pronouns) p.pronouns = pr.pronouns;
-      });
-
-    // 관리자가 바꾼 이미지와 탭 잠금 상태
-      const [{ data: imgs }, { data: locks }] = await Promise.all([
+    const [notices, events, clubs, matches, players, status, imgs, locks, profs, who, mine] =
+      await Promise.all([
+        sb.from('notices').select('*').order('created_at', { ascending: false }),
+        sb.from('events').select('*').order('starts_at'),
+        sb.from('clubs').select('*'),
+        sb.from('matches').select('*').order('starts_at'),
+        sb.from('players').select('*').order('kills', { ascending: false }),
+        sb.from('server_status').select('online_count').limit(1),
         sb.from('site_images').select('key,url'),
         sb.from('tab_locks').select('page,locked,reason'),
+        sb.from('profiles').select('mc_name,pronouns'),
+        store.user ? sb.rpc('whoami') : Promise.resolve({ data: null, error: null }),
+        // 내 프로필 행도 같이 받아 둡니다. 내 정보 · 구단 화면이 곧바로 그려집니다.
+        store.user
+          ? sb.from('profiles').select('*').eq('id', store.user.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
-      (imgs || []).forEach((r) => r.url && (store.images[r.key] = r.url));
-      store.locks = locks || [];
+
+    if (mine && !mine.error && mine.data) store.profile = mine.data;
+
+    store.notices = rows(notices);
+    store.events = rows(events);
+    store.matches = rows(matches);
+    store.players = rows(players);
+    store.clubs = rows(clubs).sort((a, b) => b.wins - a.wins || b.reputation - a.reputation);
+
+    // 접속자 수는 마인크래프트 서버가 갱신할 때만 표시합니다.
+    store.onlineCount = null;
+    if (!status.error && status.data && status.data.length) {
+      store.onlineCount = status.data[0].online_count;
     }
 
-    // 순위표는 승수 → 세트득실 순으로 정렬
-    store.clubs = [...store.clubs].sort((a, b) => b.wins - a.wins || b.reputation - a.reputation);
-    store.discordName = discordName(store.user);
+    rows(imgs).forEach((r) => r.url && (store.images[r.key] = r.url));
+    store.locks = rows(locks);
+
+    // 프로필의 대명사를 랭킹 호버 카드에도 보여줍니다.
+    rows(profs).forEach((pr) => {
+      const p = store.players.find((x) => x.name === pr.mc_name);
+      if (p && pr.pronouns) p.pronouns = pr.pronouns;
+    });
+
+    // RLS 와 같은 기준으로 판단하도록 DB 의 is_admin() 결과를 그대로 씁니다.
+    if (store.user) {
+      if (!who.error && who.data) {
+        store.whoami = who.data;
+        store.isAdmin = !!who.data.is_admin;
+      } else {
+        // whoami() 가 없는 예전 스키마 대비
+        const { data: adm } = await sb.from('admins').select('discord_username');
+        store.admins = adm || [];
+        store.isAdmin =
+          (adm || []).some((r) => norm(r.discord_username) === norm(store.discordName)) ||
+          norm(store.discordName) === norm(CFG.bootstrapAdmin);
+      }
+    }
   })();
 
   /* ---------- 랭킹 정의 ----------

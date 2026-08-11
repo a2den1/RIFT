@@ -20,12 +20,20 @@
     if (!RIFT.user) {
       root.innerHTML = `
         <div class="empty" style="padding-bottom:18px">구단을 만들거나 이적을 신청하려면 로그인이 필요합니다.</div>
-        <div style="text-align:center"><a href="login.html" class="btn btn-primary btn-sm">로그인</a></div>`;
+        <div style="text-align:center"><a href="login" class="btn btn-primary btn-sm">로그인</a></div>`;
       return;
     }
 
     const sb = RIFT.client;
-    const profile = await RIFT.ensureProfile();
+
+    // 서로 기다릴 필요가 없는 요청이라 한 번에 보냅니다.
+    const [profile, clubsRes, myReqRes] = await Promise.all([
+      RIFT.ensureProfile(),
+      sb.from('clubs').select('*').order('name'),
+      sb.from('transfers').select('*').eq('player_id', RIFT.user.id)
+        .order('created_at', { ascending: false }).limit(3),
+    ]);
+
     if (!profile) {
       root.innerHTML = `<div class="empty">프로필 테이블이 없습니다. supabase/add-profiles.sql 을 실행해 주세요.</div>`;
       return;
@@ -36,14 +44,10 @@
       return error ? { ok: false, error: error.message } : data;
     };
 
-    const { data: clubs } = await sb.from('clubs').select('*').order('name');
-    const list = clubs || [];
+    const list = clubsRes.data || [];
     const mine = list.find((c) => c.name === profile.club);
     const owned = list.find((c) => c.owner_id === RIFT.user.id);
-
-    const { data: myReq } = await sb
-      .from('transfers').select('*').eq('player_id', RIFT.user.id)
-      .order('created_at', { ascending: false }).limit(3);
+    const myReq = myReqRes.data || [];
 
     const reqHtml = (myReq || []).length
       ? `<h3 class="club-h3">내 이적 신청</h3>
@@ -58,10 +62,14 @@
 
     /* ---------- 소속이 있을 때 ---------- */
     if (mine) {
-      const { data: reqs } = owned
-        ? await sb.from('transfers').select('*').eq('to_club', owned.name).eq('status', 'pending').order('created_at')
-        : { data: [] };
-      const { data: members } = await sb.from('profiles').select('mc_name,job,pronouns').eq('club', mine.name);
+      const [reqsRes, membersRes] = await Promise.all([
+        owned
+          ? sb.from('transfers').select('*').eq('to_club', owned.name).eq('status', 'pending').order('created_at')
+          : Promise.resolve({ data: [] }),
+        sb.from('profiles').select('mc_name,job,pronouns').eq('club', mine.name),
+      ]);
+      const reqs = reqsRes.data || [];
+      const members = membersRes.data || [];
 
       root.innerHTML = `
         <div class="club-card">
@@ -136,7 +144,7 @@
             <span class="grow">${t}</span><small class="muted">${hint}</small>
           </div>`).join('')}
       </div>
-      ${!profile.mc_name || !profile.job ? `<a href="profile.html" class="btn btn-soft btn-sm" style="margin-top:14px">내 정보에서 채우기</a>` : ''}
+      ${!profile.mc_name || !profile.job ? `<a href="profile" class="btn btn-soft btn-sm" style="margin-top:14px">내 정보에서 채우기</a>` : ''}
 
       <h3 class="club-h3">구단 만들기</h3>
       <form id="createForm">

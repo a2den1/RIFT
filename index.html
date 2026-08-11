@@ -6,6 +6,12 @@
 <title>RIFT</title>
 <meta name="description" content="약탈 야생과 7vs7 공식 리그를 운영하는 마인크래프트 서버.">
 <link rel="icon" href="assets/img/rift-icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://monwqvbwsonbnrhwqfnb.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fastly.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://mc-heads.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -13,19 +19,19 @@
 
 <header class="header" id="header">
   <div class="header-inner">
-    <a href="index.html" class="brand" aria-label="RIFT 홈">
+    <a href="/" class="brand" aria-label="RIFT 홈">
       <span class="brand-stage"><i class="brand-full"></i><i class="brand-icon"></i></span>
     </a>
     <nav class="nav" id="nav">
-      <a href="index.html">홈</a>
-      <a href="guide.html">도움말</a>
-      <a href="league.html">공식 리그</a>
-      <a href="ranking.html">랭킹</a>
-      <a href="support.html">후원</a>
+      <a href="/">홈</a>
+      <a href="guide">도움말</a>
+      <a href="league">공식 리그</a>
+      <a href="ranking">랭킹</a>
+      <a href="support">후원</a>
     </nav>
     <div class="header-actions">
       <span id="authSlot"></span>
-      <a href="play.html" class="btn btn-primary btn-sm">서버 접속</a>
+      <a href="play" class="btn btn-primary btn-sm">서버 접속</a>
       <button class="icon-btn nav-toggle" id="navToggle" aria-label="메뉴"><i class="fa-solid fa-bars"></i></button>
     </div>
   </div>
@@ -64,14 +70,14 @@
   </div>
 
   <div class="hero-start">
-    <a href="play.html" class="btn btn-primary btn-lg">시작하기</a>
+    <a href="play" class="btn btn-primary btn-lg">시작하기</a>
   </div>
 </section>
 
 <section class="section wrap">
   <div class="s-head split">
     <div><h2>소식</h2></div>
-    <a href="league.html" class="card-link">경기 일정 <i class="fa-solid fa-arrow-right"></i></a>
+    <a href="league" class="card-link">경기 일정 <i class="fa-solid fa-arrow-right"></i></a>
   </div>
   <div class="news" id="news"></div>
 </section>
@@ -88,7 +94,7 @@
       <div class="f-kicker">야생</div>
       <h2>땅 보호 없는 약탈 야생</h2>
       <p>기지를 직접 짓고 자원을 모읍니다. 보호 구역이 없기 때문에 다른 유저의 기지를 발견하면 약탈할 수 있습니다. 전투 중에는 도주·보관 명령어가 제한됩니다.</p>
-      <a href="guide.html#wild" class="btn btn-soft">야생 규칙</a>
+      <a href="guide#wild" class="btn btn-soft">야생 규칙</a>
     </div>
   </article>
 
@@ -98,7 +104,7 @@
       <div class="f-kicker">공식 리그</div>
       <h2>7vs7 점령전</h2>
       <p>중앙 거점을 두고 두 구단이 겨룹니다. 킬은 승리 조건이 아니며 거점 점령 상황으로 승패가 결정됩니다. 경기는 BO3로 진행합니다.</p>
-      <a href="league.html" class="btn btn-soft">리그 순위</a>
+      <a href="league" class="btn btn-soft">리그 순위</a>
     </div>
   </article>
 </section>
@@ -114,7 +120,7 @@
 <section class="section wrap">
   <div class="s-head split">
     <div><h2>다음 경기</h2></div>
-    <a href="league.html" class="card-link">전체 일정 <i class="fa-solid fa-arrow-right"></i></a>
+    <a href="league" class="card-link">전체 일정 <i class="fa-solid fa-arrow-right"></i></a>
   </div>
   <div class="matches" id="matches"></div>
 </section>
@@ -124,14 +130,14 @@
     <div class="tbl-card">
       <div class="tbl-head">
         <h3>구단 순위</h3>
-        <a href="league.html" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
+        <a href="league" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
       </div>
       <div class="tbl-scroll"><table class="tbl" style="min-width:0"><tbody id="homeClubs"></tbody></table></div>
     </div>
     <div class="tbl-card">
       <div class="tbl-head">
         <h3>PVP 킬</h3>
-        <a href="ranking.html" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
+        <a href="ranking" class="card-link" style="font-size:13.5px">전체 <i class="fa-solid fa-arrow-right"></i></a>
       </div>
       <div class="tbl-scroll"><table class="tbl" style="min-width:0"><tbody id="homePlayers"></tbody></table></div>
     </div>
@@ -142,7 +148,7 @@
   <div class="cta">
     <h2>접속 준비가 끝났습니다</h2>
     <p>서버 주소와 접속 순서를 안내해 드립니다.</p>
-    <a href="play.html" class="btn btn-primary btn-lg">시작하기</a>
+    <a href="play" class="btn btn-primary btn-lg">시작하기</a>
   </div>
 </section>
 
@@ -155,9 +161,9 @@
       <p>약탈 야생과 7vs7 공식 리그를 함께 운영하는 마인크래프트 서버.</p>
     </div>
     <div class="footer-nav">
-      <div><h5>서버</h5><a href="play.html">서버 접속</a><a href="guide.html">도움말</a><a href="guide.html#economy">경제</a></div>
-      <div><h5>리그</h5><a href="league.html">공식 리그</a><a href="ranking.html">랭킹</a><a href="guide.html#club">구단</a></div>
-      <div><h5>기타</h5><a href="support.html">후원</a><a href="login.html">로그인</a><a href="#" data-discord>디스코드</a></div>
+      <div><h5>서버</h5><a href="play">서버 접속</a><a href="guide">도움말</a><a href="guide#economy">경제</a></div>
+      <div><h5>리그</h5><a href="league">공식 리그</a><a href="ranking">랭킹</a><a href="guide#club">구단</a></div>
+      <div><h5>기타</h5><a href="support">후원</a><a href="login">로그인</a><a href="#" data-discord>디스코드</a></div>
     </div>
   </div>
   <div class="wrap footer-bottom">
