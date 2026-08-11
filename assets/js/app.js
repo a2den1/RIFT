@@ -306,14 +306,18 @@ function initAuthUI() {
       ? `<a href="profile.html" class="me" title="내 정보">
            <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
            <span>${escapeHtml(name)}</span>
-         </a>`
+         </a>
+         <button class="me me-out" id="headerSignOut" title="로그아웃">
+           <i class="fa-solid fa-arrow-right-from-bracket"></i>
+           <span>로그아웃</span>
+         </button>`
       : `<a href="login.html" class="btn btn-soft btn-sm login-btn">로그인</a>`;
+    $('#headerSignOut')?.addEventListener('click', confirmSignOut);
   }
 
   // 모바일에서는 헤더 버튼이 숨겨지므로 사이드바 안에 계정 영역을 둡니다.
   if (nav) {
     $('.nav-account', nav)?.remove();
-    $('.nav-signout', nav)?.remove();
 
     const acc = document.createElement('div');
     acc.className = 'nav-account';
@@ -327,14 +331,6 @@ function initAuthUI() {
            <i class="fa-brands fa-discord"></i> 로그인
          </a>`;
     nav.prepend(acc);
-
-    if (RIFT.user) {
-      const out = document.createElement('button');
-      out.className = 'btn btn-soft nav-signout';
-      out.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃';
-      out.addEventListener('click', confirmSignOut);
-      nav.append(out);
-    }
   }
 }
 
