@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await RIFT.ready;
   initAuthUI();
   renderPage();
+  showSiteModal();
 });
 
 /* 데이터가 들어오기 전에 채워 둘 회색 자리표시. */
@@ -137,6 +138,7 @@ function renderPage() {
   renderMatches();
   renderHomeBoards();
   renderRanking();
+  renderShop();
   initGuide();
   window.initProfilePage && window.initProfilePage();
   $$('#clubMount').forEach((el) => window.mountClub && window.mountClub(el));
@@ -325,6 +327,188 @@ function initToast() {
     toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
   };
 }
+
+/* =========================================================
+   후원 상점
+   상품 그림은 관리자가 이미지 교체에서 넣습니다.
+   아직 없으면 아이콘만 있는 판을 보여 줍니다.
+   ========================================================= */
+const SHOP_ITEMS = [
+  { key: 'shop_1', icon: 'fa-vault', name: '금고 확장', desc: '보관 칸 +27', price: 4000 },
+  { key: 'shop_2', icon: 'fa-house', name: '홈 슬롯 추가', desc: '/home 위치 +1', price: 2000 },
+  { key: 'shop_3', icon: 'fa-tag', name: '커스텀 칭호', desc: '이름 앞에 붙는 칭호', price: 5000 },
+  { key: 'shop_4', icon: 'fa-shield-halved', name: '구단 엠블럼 교체', desc: '리그 표기에 반영', price: 3000 },
+];
+
+function renderShop() {
+  const rail = $('#shopRail');
+  if (!rail) return;
+
+  const art = (key, icon) => {
+    const url = RIFT.image(key);
+    return url
+      ? `<img class="shop-art" src="${url}" alt="" loading="lazy" onerror="this.remove()">`
+      : `<div class="shop-art shop-art-none"><i class="fa-solid ${icon}"></i></div>`;
+  };
+
+  rail.innerHTML = SHOP_ITEMS.map(
+    (it) => `
+    <button class="shop-card" data-plan="${it.name}">
+      ${art(it.key, it.icon)}
+      <div class="shop-card-txt">
+        <b>${it.name}</b>
+        <small>${it.desc}</small>
+        <span class="shop-price">${it.price.toLocaleString()}원</span>
+      </div>
+    </button>`
+  ).join('');
+
+  // 배너와 큰 카드도 그림이 있으면 깔아 줍니다.
+  const hero = $('#shopHero');
+  const heroImg = RIFT.image('shop_hero');
+  if (hero && heroImg) hero.style.backgroundImage = `url("${heroImg}")`;
+
+  $$('[data-promo]').forEach((el) => {
+    const url = RIFT.image(el.dataset.promo);
+    if (!url) return;
+    el.style.backgroundImage = `url("${url}")`;
+    el.classList.add('has-art');
+  });
+
+  // 내 코인은 게임 서버가 올린 값입니다.
+  const chip = $('#shopCoin');
+  if (chip) {
+    const coin = RIFT.coinOf(RIFT.profile?.mc_name);
+    chip.hidden = coin === null;
+    if (coin !== null) chip.innerHTML = `<i class="fa-solid fa-coins"></i> ${coin.toLocaleString()}`;
+  }
+
+  $$('[data-shop-scroll]').forEach((b) => {
+    if (b._bound) return;
+    b._bound = true;
+    b.addEventListener('click', () => rail.scrollBy({ left: +b.dataset.shopScroll * (rail.clientWidth * 0.8), behavior: 'smooth' }));
+  });
+}
+
+/* =========================================================
+   디스코드 문법 → HTML
+   관리자가 디스코드에 쓰듯이 적으면 그대로 보이게 합니다.
+   먼저 전부 이스케이프한 뒤 우리가 아는 표시만 되살리므로
+   본문에 태그를 적어도 그냥 글자로 나옵니다.
+   ========================================================= */
+function discordMd(src) {
+  if (!src) return '';
+  const holds = [];
+  // 본문에 나올 일이 없는 사용자 영역 문자를 자리표시로 씁니다.
+  const P0 = '', P1 = '';
+  const hold = (html) => P0 + (holds.push(html) - 1) + P1;
+
+  let s = String(src)
+    .replace(/[ ]/g, '') // 자리표시 문자가 섞여 들어오지 못하게
+    .replace(/\r\n/g, '\n')
+    .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // 코드 블록과 인라인 코드는 안쪽을 건드리면 안 되니 먼저 빼 둡니다.
+  s = s.replace(/```(?:[a-z]*\n)?([\s\S]*?)```/gi, (_, code) => hold(`<pre class="md-pre"><code>${code.replace(/\n$/, '')}</code></pre>`));
+  s = s.replace(/`([^`\n]+)`/g, (_, code) => hold(`<code class="md-code">${code}</code>`));
+
+  // [글자](주소) — http/https 만 받습니다.
+  s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_, t, u) => hold(`<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`));
+  // 맨 주소도 링크로
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+    (_, pre, u) => pre + hold(`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`));
+
+  s = s.replace(/\|\|([\s\S]+?)\|\|/g, '<span class="md-spoiler" tabindex="0">$1</span>');
+  s = s.replace(/\*\*\*([\s\S]+?)\*\*\*/g, '<b><i>$1</i></b>');
+  s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>');
+  s = s.replace(/__([\s\S]+?)__/g, '<u>$1</u>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
+  s = s.replace(/(^|[^_\w])_([^_\n]+)_/g, '$1<i>$2</i>');
+  s = s.replace(/~~([\s\S]+?)~~/g, '<s>$1</s>');
+  s = s.replace(/^(#{1,3})\s+(.+)$/gm, (_, h, t) => `<h${h.length + 2} class="md-h">${t}</h${h.length + 2}>`);
+  s = s.replace(/^-#\s+(.+)$/gm, '<small class="md-sub">$1</small>');
+
+  // 줄 단위: 인용과 목록
+  const out = [];
+  let list = null, quote = false;
+  const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  const closeQuote = () => { if (quote) { out.push('</blockquote>'); quote = false; } };
+
+  for (const raw of s.split('\n')) {
+    const line = raw.trimEnd();
+    const q = /^&gt;\s?(.*)$/.exec(line);
+    const ul = /^[-*]\s+(.+)$/.exec(line);
+    const ol = /^\d+\.\s+(.+)$/.exec(line);
+
+    if (q) { closeList(); if (!quote) { out.push('<blockquote class="md-quote">'); quote = true; } out.push(q[1] || '<br>'); continue; }
+    closeQuote();
+    if (ul) { if (list !== 'ul') { closeList(); out.push('<ul class="md-list">'); list = 'ul'; } out.push(`<li>${ul[1]}</li>`); continue; }
+    if (ol) { if (list !== 'ol') { closeList(); out.push('<ol class="md-list">'); list = 'ol'; } out.push(`<li>${ol[1]}</li>`); continue; }
+    closeList();
+    out.push(line ? (/^<(h[3-5]|pre|small)/.test(line) ? line : `<p>${line}</p>`) : '');
+  }
+  closeList(); closeQuote();
+
+  const re = new RegExp(P0 + '(\\d+)' + P1, 'g');
+  return out.join('\n').replace(re, (_, i) => holds[+i]);
+}
+window.discordMd = discordMd;
+
+/* =========================================================
+   사이트에 들어오면 뜨는 안내 모달
+   내용이 바뀌면 version 이 올라가서 다시 보입니다.
+   ========================================================= */
+function showSiteModal() {
+  const m = RIFT.modal;
+  if (!m || !m.enabled) return;
+  if (document.getElementById('siteModal')) return;
+  const key = 'rift.modal.seen';
+  if (localStorage.getItem(key) === String(m.version)) return;
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '');
+
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back';
+  wrap.id = 'siteModal';
+  wrap.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(m.title || '안내')}">
+      ${safeUrl(m.image_url) ? `<img class="modal-img" src="${esc(m.image_url)}" alt="" onerror="this.remove()">` : ''}
+      <div class="modal-body">
+        ${m.title ? `<h2>${esc(m.title)}</h2>` : ''}
+        <div class="md">${discordMd(m.body)}</div>
+      </div>
+      <div class="modal-foot">
+        <label class="modal-again"><input type="checkbox" id="modalAgain"> 다시 보지 않기</label>
+        <div class="modal-btns">
+          ${m.button_label && safeUrl(m.button_url)
+            ? `<a class="btn btn-primary btn-sm" href="${esc(m.button_url)}" target="_blank" rel="noopener noreferrer">${esc(m.button_label)}</a>` : ''}
+          <button class="btn btn-soft btn-sm" id="modalClose">닫기</button>
+        </div>
+      </div>
+      <button class="modal-x" id="modalX" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+    </div>`;
+
+  const close = () => {
+    if (document.getElementById('modalAgain')?.checked) localStorage.setItem(key, String(m.version));
+    wrap.classList.remove('show');
+    setTimeout(() => wrap.remove(), 200);
+    document.body.style.overflow = '';
+  };
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector('#modalClose').addEventListener('click', close);
+  wrap.querySelector('#modalX').addEventListener('click', close);
+  addEventListener('keydown', function esckey(e) {
+    if (e.key === 'Escape') { close(); removeEventListener('keydown', esckey); }
+  });
+
+  document.body.appendChild(wrap);
+  document.body.style.overflow = 'hidden';
+  // rAF 는 탭이 뒤에 있으면 멈추므로 타이머로 켭니다.
+  setTimeout(() => wrap.classList.add('show'), 20);
+}
+window.showSiteModal = showSiteModal;
 
 /* =========================================================
    로그인 상태

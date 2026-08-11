@@ -21,6 +21,7 @@
     admins: [],
     images: Object.assign({}, CFG.images),
     locks: [],
+    modal: null,
     user: null,
     isAdmin: false,
     ready: null,
@@ -28,6 +29,16 @@
 
   store.image = (key) => store.images[key] || CFG.images[key] || '';
   store.lockOf = (page) => store.locks.find((l) => l.page === page && l.locked) || null;
+
+  /* ---------- 게임 안의 기록 ----------
+     직업과 코인은 마인크래프트 서버가 players 로 올린 값이 진짜입니다.
+     사이트에서는 읽기만 하고 절대 쓰지 않습니다. */
+  store.gameOf = (mcName) => (mcName ? store.players.find((p) => p.name === mcName) : null) || null;
+  store.jobOf = (mcName) => store.gameOf(mcName)?.job || null;
+  store.coinOf = (mcName) => {
+    const g = store.gameOf(mcName);
+    return g && typeof g.money === 'number' ? g.money : null;
+  };
 
   /* ---------- 경험치 ----------
      레벨 n 에 도달하려면 100 * (n-1)^2 의 경험치가 필요합니다. */
@@ -121,7 +132,7 @@
       return r.data || [];
     };
 
-    const [notices, events, clubs, matches, players, status, imgs, locks, profs, who, mine] =
+    const [notices, events, clubs, matches, players, status, imgs, locks, profs, who, mine, modal] =
       await Promise.all([
         sb.from('notices').select('*').order('created_at', { ascending: false }),
         sb.from('events').select('*').order('starts_at'),
@@ -137,9 +148,11 @@
         store.user
           ? sb.from('profiles').select('*').eq('id', store.user.id).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
+        sb.from('site_modal').select('*').eq('id', 1).maybeSingle(),
       ]);
 
     if (mine && !mine.error && mine.data) store.profile = mine.data;
+    if (!modal.error && modal.data && modal.data.enabled) store.modal = modal.data;
 
     store.notices = rows(notices);
     store.events = rows(events);

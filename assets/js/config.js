@@ -45,6 +45,13 @@ window.RIFT_CONFIG = {
     { key: 'job_tank', label: '직업 · 탱커', size: '800×600' },
     { key: 'job_range', label: '직업 · 원거리', size: '800×600' },
     { key: 'job_support', label: '직업 · 서포터', size: '800×600' },
+    { key: 'shop_hero', label: '후원 · 상단 배너', size: '1800×600' },
+    { key: 'shop_1', label: '후원 · 상품 1', size: '600×600' },
+    { key: 'shop_2', label: '후원 · 상품 2', size: '600×600' },
+    { key: 'shop_3', label: '후원 · 상품 3', size: '600×600' },
+    { key: 'shop_4', label: '후원 · 상품 4', size: '600×600' },
+    { key: 'shop_promo_1', label: '후원 · 큰 카드 왼쪽', size: '1100×620' },
+    { key: 'shop_promo_2', label: '후원 · 큰 카드 오른쪽', size: '1100×620' },
   ],
 
   // 잠글 수 있는 탭

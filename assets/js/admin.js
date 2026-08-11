@@ -340,7 +340,7 @@ addEventListener('unhandledrejection', (e) => {
 
   document.addEventListener('change', (e) => {
     const f = e.target.closest('.upload-btn input[type="file"]');
-    if (!f) return;
+    if (!f || f.dataset.modalImg) return; // 모달 이미지는 아래에서 따로 처리합니다
     const row = f.closest('.upload-row');
     const input = row.querySelector('input[type="url"], input[type="text"], input[name]');
     const key = f.dataset.slot;
@@ -463,6 +463,169 @@ addEventListener('unhandledrejection', (e) => {
     renderLocks();
   });
 
+  /* =========================================================
+     진입 안내 모달
+     본문은 디스코드 문법 그대로 쓰고, 오른쪽에서 바로 확인합니다.
+     ========================================================= */
+  async function renderModal() {
+    const box = document.getElementById('modalBox');
+    if (!box) return;
+    const { data, error } = await sb.from('site_modal').select('*').eq('id', 1).maybeSingle();
+    if (error || !data) {
+      box.innerHTML = `<div class="empty">site_modal 테이블이 없습니다. supabase/add-modal-and-job.sql 을 실행해 주세요.</div>`;
+      return;
+    }
+    const v = (x) => escapeHtml(x || '');
+    box.innerHTML = `
+      <label class="switch-row">
+        <input type="checkbox" id="mdEnabled" ${data.enabled ? 'checked' : ''}>
+        <span><b>모달 켜기</b><small>끄면 아무에게도 보이지 않습니다.</small></span>
+      </label>
+
+      <div class="md-edit">
+        <div class="md-edit-form">
+          <div class="field"><label>제목</label><input id="mdTitle" maxlength="60" value="${v(data.title)}"></div>
+
+          <div class="field">
+            <label>본문 <small class="muted">디스코드 문법</small></label>
+            <div class="md-tools">
+              <button type="button" class="md-tool" data-wrap="**" title="굵게"><i class="fa-solid fa-bold"></i></button>
+              <button type="button" class="md-tool" data-wrap="*" title="기울임"><i class="fa-solid fa-italic"></i></button>
+              <button type="button" class="md-tool" data-wrap="__" title="밑줄"><i class="fa-solid fa-underline"></i></button>
+              <button type="button" class="md-tool" data-wrap="~~" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+              <button type="button" class="md-tool" data-wrap="\`" title="코드"><i class="fa-solid fa-code"></i></button>
+              <button type="button" class="md-tool" data-wrap="||" title="숨김"><i class="fa-solid fa-eye-slash"></i></button>
+              <button type="button" class="md-tool" data-line="# " title="제목"><i class="fa-solid fa-heading"></i></button>
+              <button type="button" class="md-tool" data-line="> " title="인용"><i class="fa-solid fa-quote-left"></i></button>
+              <button type="button" class="md-tool" data-line="- " title="목록"><i class="fa-solid fa-list-ul"></i></button>
+              <button type="button" class="md-tool" data-link="1" title="링크"><i class="fa-solid fa-link"></i></button>
+            </div>
+            <textarea id="mdBody" rows="9" placeholder="**8월 정기 점검**&#10;&#10;- 8월 12일 오전 2시부터 4시까지&#10;- 자세한 내용은 [디스코드](https://discord.gg/) 참고">${v(data.body)}</textarea>
+          </div>
+
+          <div class="field">
+            <label>이미지 <small class="muted">선택</small></label>
+            <div class="upload-row">
+              <input id="mdImage" type="text" placeholder="주소를 넣거나 파일을 올리세요" value="${v(data.image_url)}">
+              <label class="btn btn-soft btn-sm upload-btn" title="파일 올리기">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                <input type="file" accept="image/*" hidden data-modal-img="1">
+              </label>
+              ${data.image_url ? `<button class="btn btn-soft btn-sm" id="mdImageClear" title="지우기"><i class="fa-solid fa-xmark"></i></button>` : ''}
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field"><label>버튼 글자</label><input id="mdBtnLabel" maxlength="20" value="${v(data.button_label)}" placeholder="예: 디스코드 참여"></div>
+            <div class="field"><label>버튼 주소</label><input id="mdBtnUrl" type="url" value="${v(data.button_url)}" placeholder="https://"></div>
+          </div>
+
+          <div class="md-actions">
+            <button class="btn btn-primary btn-sm" id="mdSave">저장</button>
+            <button class="btn btn-soft btn-sm" id="mdTest">지금 띄워 보기</button>
+            <small class="muted">판 ${data.version}</small>
+          </div>
+        </div>
+
+        <div class="md-edit-prev">
+          <small class="muted">미리 보기</small>
+          <div class="md-prev-card" id="mdPrev"></div>
+        </div>
+      </div>`;
+
+    const $id = (i) => document.getElementById(i);
+    const paint = () => {
+      const img = $id('mdImage').value.trim();
+      const label = $id('mdBtnLabel').value.trim();
+      const url = $id('mdBtnUrl').value.trim();
+      $id('mdPrev').innerHTML = `
+        ${/^https?:\/\//i.test(img) ? `<img class="modal-img" src="${escapeHtml(img)}" alt="" onerror="this.remove()">` : ''}
+        <div class="modal-body">
+          ${$id('mdTitle').value.trim() ? `<h2>${escapeHtml($id('mdTitle').value.trim())}</h2>` : ''}
+          <div class="md">${window.discordMd($id('mdBody').value)}</div>
+        </div>
+        ${label && /^https?:\/\//i.test(url) ? `<div class="modal-foot"><div class="modal-btns"><span class="btn btn-primary btn-sm">${escapeHtml(label)}</span></div></div>` : ''}`;
+    };
+    ['mdTitle', 'mdBody', 'mdImage', 'mdBtnLabel', 'mdBtnUrl'].forEach((i) =>
+      $id(i).addEventListener('input', paint)
+    );
+    paint();
+
+    // 서식 버튼 — 고른 글자를 감싸거나 줄 앞에 붙입니다.
+    box.querySelectorAll('.md-tool').forEach((b) =>
+      b.addEventListener('click', () => {
+        const ta = $id('mdBody');
+        const [a, z] = [ta.selectionStart, ta.selectionEnd];
+        const sel = ta.value.slice(a, z);
+        let text, caret;
+        if (b.dataset.wrap) {
+          const w = b.dataset.wrap;
+          text = w + (sel || '글자') + w;
+          caret = a + w.length + (sel || '글자').length;
+        } else if (b.dataset.link) {
+          text = `[${sel || '링크'}](https://)`;
+          caret = a + text.length - 1;
+        } else {
+          const p = b.dataset.line;
+          text = (sel || '내용').split('\n').map((l) => p + l).join('\n');
+          caret = a + text.length;
+        }
+        ta.setRangeText(text, a, z, 'end');
+        ta.selectionStart = ta.selectionEnd = caret;
+        ta.focus();
+        paint();
+      })
+    );
+
+    $id('mdImageClear')?.addEventListener('click', () => {
+      $id('mdImage').value = '';
+      paint();
+    });
+
+    $id('mdSave').addEventListener('click', async (e) => {
+      const url = $id('mdBtnUrl').value.trim();
+      if (url && !/^https?:\/\//i.test(url)) return toast('버튼 주소는 http:// 또는 https:// 로 시작해야 합니다.');
+      e.target.disabled = true;
+      const { error } = await sb.from('site_modal').update({
+        enabled: $id('mdEnabled').checked,
+        title: $id('mdTitle').value.trim(),
+        body: $id('mdBody').value,
+        image_url: $id('mdImage').value.trim() || null,
+        button_label: $id('mdBtnLabel').value.trim() || null,
+        button_url: url || null,
+      }).eq('id', 1);
+      e.target.disabled = false;
+      if (error) return toast('저장 실패: ' + error.message);
+      toast('저장했습니다.');
+      renderModal();
+    });
+
+    $id('mdTest').addEventListener('click', () => {
+      localStorage.removeItem('rift.modal.seen');
+      RIFT.modal = {
+        enabled: true,
+        title: $id('mdTitle').value.trim(),
+        body: $id('mdBody').value,
+        image_url: $id('mdImage').value.trim() || null,
+        button_label: $id('mdBtnLabel').value.trim() || null,
+        button_url: $id('mdBtnUrl').value.trim() || null,
+        version: 'preview',
+      };
+      window.showSiteModal();
+    });
+  }
+
+  // 모달 이미지는 전용 폴더에 올립니다.
+  document.addEventListener('change', (e) => {
+    const f = e.target.closest('input[data-modal-img]');
+    if (!f || !f.files[0]) return;
+    handleFile(f.files[0], document.getElementById('mdImage'), 'modal', () => {
+      document.getElementById('mdImage').dispatchEvent(new Event('input'));
+    });
+    f.value = '';
+  });
+
   renderImages();
   renderLocks();
+  renderModal();
 })();

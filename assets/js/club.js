@@ -107,7 +107,7 @@
           <h3 class="club-h3">로스터</h3>
           <div class="rows">${(members || []).length ? members.map((m) => `
             <div class="row-item"><div class="grow"><b>${esc(m.mc_name || '이름 없음')}</b>
-              <small>${esc(m.job || '직업 미선택')}${m.pronouns ? ' · ' + esc(m.pronouns) : ''}</small></div></div>`).join('')
+              <small>${esc(RIFT.jobOf(m.mc_name) || m.job || '직업 미선택')}${m.pronouns ? ' · ' + esc(m.pronouns) : ''}</small></div></div>`).join('')
             : '<div class="empty">등록된 선수가 없습니다.</div>'}</div>
         ` : `<button class="btn btn-soft btn-sm" id="leaveBtn" style="margin-top:16px">구단 탈퇴</button>`}
         ${reqHtml}`;
@@ -131,7 +131,7 @@
     /* ---------- 소속이 없을 때 ---------- */
     const ready = [
       [!!profile.mc_name, '마인크래프트 닉네임 등록', '내 정보에서 설정합니다'],
-      [!!profile.job, '직업 선택', '내 정보에서 설정합니다'],
+      [!!RIFT.jobOf(profile.mc_name), '직업 선택', '게임 안에서 고릅니다'],
       [true, '구단 이름 2~16자', '중복되지 않는 이름'],
       [true, '구단 로고 이미지', '파일 업로드 또는 주소 입력'],
     ];
@@ -144,7 +144,7 @@
             <span class="grow">${t}</span><small class="muted">${hint}</small>
           </div>`).join('')}
       </div>
-      ${!profile.mc_name || !profile.job ? `<a href="profile" class="btn btn-soft btn-sm" style="margin-top:14px">내 정보에서 채우기</a>` : ''}
+      ${!profile.mc_name ? `<a href="profile" class="btn btn-soft btn-sm" style="margin-top:14px">내 정보에서 계정 연결하기</a>` : ''}
 
       <h3 class="club-h3">구단 만들기</h3>
       <form id="createForm">
@@ -227,7 +227,8 @@
 
     document.addEventListener('change', async (e) => {
       const f = e.target.closest('.upload-row .upload-btn input[type="file"]');
-      if (!f || !f.files[0] || f.dataset.slot) return; // 관리자 이미지 슬롯은 admin.js 가 처리
+      // 관리자 화면의 이미지 슬롯과 모달 이미지는 admin.js 가 처리합니다.
+      if (!f || !f.files[0] || f.dataset.slot || f.dataset.modalImg) return;
       const row = f.closest('.upload-row');
       const input = row.querySelector('input:not([type="file"])');
       row.classList.add('uploading');

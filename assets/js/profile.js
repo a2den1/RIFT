@@ -174,11 +174,35 @@
     pr.hidden = !profile.pronouns;
     pr.textContent = profile.pronouns || '';
 
+    // 직업과 코인은 마인크래프트 서버가 올린 값을 그대로 보여 줍니다.
+    const game = RIFT.gameOf(profile.mc_name);
+    const job = RIFT.jobOf(profile.mc_name) || profile.job || null;
+    const coin = RIFT.coinOf(profile.mc_name);
+
     document.getElementById('meTags').innerHTML =
-      `<span class="chip">${esc(profile.job || '직업 미선택')}</span>` +
+      `<span class="chip">${esc(job || '직업 미선택')}</span>` +
       `<span class="chip"><i class="fa-solid fa-shield-halved"></i> ${esc(profile.club || '무소속')}</span>` +
       `<span class="chip"><i class="fa-brands fa-discord"></i> ${esc(profile.discord_username || RIFT.discordName || '—')}</span>`;
     document.getElementById('meBio').textContent = profile.bio || '';
+
+    const stats = document.getElementById('meStats');
+    if (stats) {
+      if (!profile.mc_name) {
+        stats.innerHTML = `<p class="me-stats-none">마인크래프트 계정을 연결하면 코인과 직업이 표시됩니다.</p>`;
+      } else if (!game) {
+        stats.innerHTML = `<p class="me-stats-none">아직 게임 기록이 올라오지 않았습니다. 서버에 한 번 접속하면 표시됩니다.</p>`;
+      } else {
+        stats.innerHTML = `
+          <div class="me-stat">
+            <span class="me-stat-k"><i class="fa-solid fa-coins"></i> 코인</span>
+            <b class="me-stat-v">${coin === null ? '—' : coin.toLocaleString()}</b>
+          </div>
+          <div class="me-stat">
+            <span class="me-stat-k"><i class="fa-solid fa-briefcase"></i> 직업</span>
+            <b class="me-stat-v">${esc(job || '미선택')}</b>
+          </div>`;
+      }
+    }
 
     const b = RIFT.levelBand(profile.xp || 0);
     document.getElementById('xpLevel').textContent = `Lv. ${b.level}`;
@@ -197,7 +221,6 @@
     /* ---------- 수정 ---------- */
     const form = document.getElementById('profileForm');
     form.pronouns.value = profile.pronouns || '';
-    form.job.value = profile.job || '';
     form.bio.value = profile.bio || '';
 
     if (!form._bound) {
@@ -206,9 +229,9 @@
         e.preventDefault();
         const btn = form.querySelector('button');
         btn.disabled = true;
+        // job 은 게임에서만 정하는 값이라 여기서 보내지 않습니다.
         const patch = {
           pronouns: form.pronouns.value.trim() || null,
-          job: form.job.value || null,
           bio: form.bio.value.trim() || null,
           updated_at: new Date().toISOString(),
         };
