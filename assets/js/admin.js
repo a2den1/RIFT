@@ -477,7 +477,7 @@ addEventListener('unhandledrejection', (e) => {
     }
     const v = (x) => escapeHtml(x || '');
     box.innerHTML = `
-      <label class="switch-row">
+      <label class="switch-row check">
         <input type="checkbox" id="mdEnabled" ${data.enabled ? 'checked' : ''}>
         <span><b>모달 켜기</b><small>끄면 아무에게도 보이지 않습니다.</small></span>
       </label>

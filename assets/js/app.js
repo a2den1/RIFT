@@ -455,6 +455,9 @@ function closeModal() {
   const wrap = $('#riftModal');
   if (!wrap) return;
   wrap.dispatchEvent(new CustomEvent('rift:modalclose'));
+  // 사라지는 동안 id 를 떼어 둡니다.
+  // 안 그러면 바로 이어서 연 모달과 id 가 겹쳐 옛것이 잡힙니다.
+  wrap.removeAttribute('id');
   wrap.classList.remove('show');
   setTimeout(() => wrap.remove(), 220);
   document.body.style.overflow = '';
@@ -574,7 +577,7 @@ function showSiteModal() {
     image: safeUrl(m.image_url) || null,
     title: m.title || '',
     html: `<div class="md">${discordMd(m.body)}</div>`,
-    foot: `<label class="modal-again"><input type="checkbox" id="modalAgain"> 다시 보지 않기</label>`,
+    foot: `<label class="modal-again check"><input type="checkbox" id="modalAgain"> 다시 보지 않기</label>`,
     buttons: m.button_label && safeUrl(m.button_url)
       ? `<a class="btn btn-primary btn-sm" href="${esc(m.button_url)}" target="_blank" rel="noopener noreferrer">${esc(m.button_label)}</a>`
       : '',
@@ -613,21 +616,29 @@ function initAuthUI() {
   const avatar = m.avatar_url || m.picture || '';
   const name = RIFT.discordName || '사용자';
 
-  // 헤더에서는 프로필로 가는 링크만 둡니다.
-  // 로그아웃 버튼을 여기 붙이면 너무 작아서 잘못 누르기 쉽습니다.
+  // 평소에는 프로필 칩만 보이고, 올려놓으면 옆으로 늘어나며 로그아웃이 나옵니다.
+  // 늘 떠 있으면 실수로 누르기 쉬워서 한 단계 숨겨 뒀습니다.
   if (slot) {
     slot.innerHTML = RIFT.user
-      ? `<a href="profile" class="me" title="내 정보">
-           <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
-           <span>${escapeHtml(name)}</span>
-         </a>
-         <button class="me me-out" id="headerSignOut" title="로그아웃">
-           <i class="fa-solid fa-arrow-right-from-bracket"></i>
-           <span>로그아웃</span>
-         </button>`
+      ? `<div class="acct">
+           <a href="profile" class="me" title="내 정보">
+             <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
+             <span>${escapeHtml(name)}</span>
+           </a>
+           <button class="acct-out" id="headerSignOut" title="로그아웃" aria-label="로그아웃">
+             <i class="fa-solid fa-arrow-right-from-bracket"></i>
+           </button>
+         </div>`
       : `<a href="login" class="btn btn-soft btn-sm login-btn">로그인</a>`;
     $('#headerSignOut')?.addEventListener('click', confirmSignOut);
   }
+
+  // 푸터의 로그인 링크는 로그인한 뒤에는 내 정보로 보냅니다.
+  $$('.footer-nav a[href="login"]').forEach((a) => {
+    if (!RIFT.user) return;
+    a.setAttribute('href', 'profile');
+    a.textContent = '내 정보';
+  });
 
   // 모바일에서는 헤더 버튼이 숨겨지므로 사이드바 안에 계정 영역을 둡니다.
   if (nav) {
@@ -1147,18 +1158,44 @@ function initHoverCard() {
     place(x, y);
   };
   const hide = () => {
+    clearTimeout(timer);
+    pending = null;
     current = null;
     pop.classList.remove('show');
   };
 
+  /* 표 위를 지나가기만 해도 카드가 튀어나오면 정신없습니다.
+     1초 머무른 뒤에 띄웁니다. 그 사이에 다른 줄로 옮기면 다시 셉니다. */
+  const HOVER_DELAY = 1000;
+  let timer = null;
+  let pending = null;
+  let lastX = 0;
+  let lastY = 0;
+
+  const queue = (el, x, y) => {
+    if (el === pending || el === current) return;
+    clearTimeout(timer);
+    pending = el;
+    timer = setTimeout(() => {
+      if (pending !== el || !el.isConnected) return;
+      show(el, lastX, lastY);
+    }, HOVER_DELAY);
+  };
+
   document.addEventListener('mouseover', (e) => {
     const el = e.target.closest('[data-player],[data-club]');
-    if (el && el !== current) show(el, e.clientX, e.clientY);
-    else if (!el && current) hide();
+    lastX = e.clientX;
+    lastY = e.clientY;
+    if (el) queue(el, e.clientX, e.clientY);
+    else hide();
   });
   document.addEventListener('mousemove', (e) => {
-    if (!current) return;
-    if (!current.isConnected || !e.target.closest('[data-player],[data-club]')) return hide();
+    lastX = e.clientX;
+    lastY = e.clientY;
+    const el = e.target.closest('[data-player],[data-club]');
+    if (!el) return (pending || current) && hide();
+    if (el !== current) return queue(el, e.clientX, e.clientY);
+    if (!current.isConnected) return hide();
     place(e.clientX, e.clientY);
   });
   addEventListener('scroll', hide, { passive: true });
@@ -1166,8 +1203,11 @@ function initHoverCard() {
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-player],[data-club]');
     if (!el) return hide();
+    const wasCurrent = el === current;
+    hide(); // 눌렀을 때는 기다리지 않고 바로 띄웁니다
+    if (wasCurrent) return;
     const r = el.getBoundingClientRect();
-    el === current ? hide() : show(el, r.left + r.width / 2, r.bottom);
+    show(el, r.left + r.width / 2, r.bottom);
   });
 }
 
@@ -1376,7 +1416,16 @@ function initReveal() {
      한 줄에 나란히 있으면 가운데 기준 좌우 대칭으로,
      폭을 거의 다 쓰는 요소는 블러로 나타납니다.
      같은 거리에 있는 짝은 지연 시간도 같아서 좌우가 동시에 들어옵니다. */
+  /* 직업 카드만 예외입니다.
+     좌우 대칭으로 들어오면 4개가 두 쌍으로 뭉쳐 보여서,
+     스크롤을 내리면 왼쪽부터 하나씩 차례로 올라오게 합니다. */
+  $$('.jobs .job').forEach((el, i) => {
+    el.classList.add('rv', 'rv-up');
+    el.style.transitionDelay = i * 110 + 'ms';
+  });
+
   $$(SEL).forEach((el) => {
+    if (el.classList.contains('rv')) return; // 위에서 이미 정한 것은 건드리지 않습니다
     const parent = el.parentElement;
     if (!parent) return;
     const pr = parent.getBoundingClientRect();

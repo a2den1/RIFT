@@ -127,10 +127,26 @@ html{scrollbar-width:thin;scrollbar-color:#3d3d4a transparent}
 
 /* 로그아웃 — 프로필 칩 바로 옆에 같은 크기로.
    아이콘을 28px 원으로 두면 아바타와 상자 크기가 정확히 같아집니다. */
-.me-out{cursor:pointer}
-.me-out i{width:28px;height:28px;border-radius:50%;background:var(--surface-3);
-  display:grid;place-items:center;font-size:12px;color:var(--txt-2);transition:color .2s,background .2s}
-.me-out:hover i{color:#ff6b6b;background:rgba(255,107,107,.15)}
+.acct{display:flex;align-items:center;background:var(--surface-2);border-radius:999px;
+  transition:background .2s}
+.acct:hover{background:var(--surface-3)}
+.acct .me{background:none}
+.acct .me:hover{background:none}
+
+/* 평소에는 폭 0 으로 접혀 있다가 올려놓으면 옆으로 늘어납니다.
+   grid 0fr 은 안쪽 아이콘의 최소 폭에 막혀 끝까지 안 접히므로 폭을 직접 다룹니다. */
+.acct-out{display:flex;align-items:center;width:0;overflow:hidden;cursor:pointer;
+  padding:0;background:none;flex:none;
+  transition:width .28s var(--ease)}
+.acct:hover .acct-out,
+.acct:focus-within .acct-out{width:34px}
+.acct-out > i{flex:none;width:28px;height:28px;margin:5px 6px 5px 0;border-radius:50%;
+  display:grid;place-items:center;font-size:12px;color:var(--txt-2);background:var(--surface);
+  opacity:0;transform:scale(.6);
+  transition:opacity .2s,transform .28s var(--ease),color .2s,background .2s}
+.acct:hover .acct-out > i,
+.acct:focus-within .acct-out > i{opacity:1;transform:none}
+.acct-out:hover > i{color:#ff6b6b;background:rgba(255,107,107,.16)}
 
 /* 사이드바 계정 영역 */
 .nav-account{display:none}
@@ -197,8 +213,11 @@ html{scrollbar-width:thin;scrollbar-color:#3d3d4a transparent}
 /* 카드마다 색 채운 아이콘 타일을 두면 화면이 금방 단조로워집니다.
    작은 아이콘 하나만 남겨 제목이 먼저 읽히게 합니다. */
 .c-ic{display:block;width:fit-content;margin-bottom:11px;color:var(--txt-3);font-size:15px;line-height:1}
-.card-link{display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;color:var(--accent)}
-.card-link:hover{gap:11px}
+.card-link{display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;
+  color:var(--accent);transition:color .18s}
+/* gap 을 바꾸면 글자까지 밀려서 덜컹거립니다. 화살표만 밀어냅니다. */
+.card-link i{transition:transform .22s var(--ease)}
+.card-link:hover i{transform:translateX(4px)}
 
 .notice{display:flex;gap:14px;padding:19px 22px;border-radius:var(--r);background:var(--surface)}
 .notice > i{color:var(--accent);font-size:16px;margin-top:5px}
@@ -796,6 +815,7 @@ img.shot{background:var(--surface-2)}
 .rv-left{transform:translateX(-36px);filter:blur(6px)}
 .rv-right{transform:translateX(36px);filter:blur(6px)}
 .rv-blur{filter:blur(12px);transform:scale(1.02)}
+.rv-up{transform:translateY(30px);filter:blur(5px)}
 .rv.in{opacity:1;transform:none;filter:none}
 
 @media (prefers-reduced-motion:reduce){
@@ -936,7 +956,6 @@ img.shot{background:var(--surface-2)}
 .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;
   flex-wrap:wrap;padding:18px 24px 22px}
 .modal-again{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--txt-3);cursor:pointer}
-.modal-again input{width:15px;height:15px;accent-color:var(--pri);cursor:pointer}
 .modal-btns{display:flex;gap:8px;margin-left:auto}
 .modal-x{
   position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
@@ -948,7 +967,6 @@ img.shot{background:var(--surface-2)}
 /* ---------- 관리자 · 모달 편집 ---------- */
 .switch-row{display:flex;align-items:center;gap:11px;background:var(--surface-2);
   border-radius:var(--r);padding:13px 16px;margin-bottom:16px;cursor:pointer}
-.switch-row input{width:17px;height:17px;accent-color:var(--pri);cursor:pointer;flex:none}
 .switch-row b{display:block;font-size:14px}
 .switch-row small{display:block;font-size:12.5px;color:var(--txt-3);margin-top:1px}
 .md-edit{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
@@ -1094,3 +1112,86 @@ img.shot{background:var(--surface-2)}
   font-size:22px;font-weight:800;line-height:1.1}
 .me-rank b span{font-size:13px;font-weight:600;color:var(--txt-2);margin-left:2px}
 @media (max-width:760px){ .me-ranks{grid-template-columns:repeat(2,1fr)} }
+
+/* ---------- 나란히 놓인 표의 높이 맞추기 ----------
+   두 카드에 담기는 줄 수가 달라도 상자 크기는 같게 둡니다.
+   한쪽만 짧으면 아래가 비어 보여서 어긋난 것처럼 읽힙니다. */
+.grid.g2 > .tbl-card{display:flex;flex-direction:column}
+.grid.g2 > .tbl-card > .tbl-scroll{flex:1}
+.grid.g2 > .tbl-card .tbl{height:100%}
+
+/* ---------- 드롭다운 ----------
+   브라우저 기본 화살표를 지우고 같은 모양으로 다시 그립니다. */
+.field select,
+select.inp{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:40px;cursor:pointer;
+  background-image:
+    linear-gradient(45deg,transparent 50%,var(--txt-3) 50%),
+    linear-gradient(135deg,var(--txt-3) 50%,transparent 50%);
+  background-position:calc(100% - 19px) calc(50% + 1px),calc(100% - 13px) calc(50% + 1px);
+  background-size:6px 6px,6px 6px;
+  background-repeat:no-repeat;
+}
+.field select:hover{background-color:var(--surface-3)}
+/* 펼쳐진 목록은 OS 가 그리므로 색만 맞춰 둡니다. */
+.field select option{background:var(--surface-2);color:var(--txt)}
+
+/* ---------- 체크박스 · 라디오 ---------- */
+input[type="checkbox"].rk,
+input[type="radio"].rk,
+.check input[type="checkbox"],
+.check input[type="radio"],
+.modal-again input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;
+  width:19px;height:19px;flex:none;margin:0;cursor:pointer;
+  background:var(--surface-3);border-radius:6px;
+  display:grid;place-items:center;
+  transition:background .18s,transform .12s var(--ease);
+}
+input[type="radio"].rk,
+.check input[type="radio"]{border-radius:50%}
+
+input[type="checkbox"].rk::after,
+.check input[type="checkbox"]::after,
+.modal-again input[type="checkbox"]::after{
+  content:'';width:10px;height:6px;margin-top:-2px;
+  border-left:2px solid #fff;border-bottom:2px solid #fff;
+  transform:rotate(-45deg) scale(.4);opacity:0;
+  transition:opacity .15s,transform .18s var(--ease);
+}
+input[type="radio"].rk::after,
+.check input[type="radio"]::after{
+  content:'';width:7px;height:7px;border-radius:50%;background:#fff;
+  transform:scale(.4);opacity:0;transition:opacity .15s,transform .18s var(--ease);
+}
+
+input[type="checkbox"].rk:checked,
+input[type="radio"].rk:checked,
+.check input:checked,
+.modal-again input[type="checkbox"]:checked{background:var(--pri)}
+
+input[type="checkbox"].rk:checked::after,
+input[type="radio"].rk:checked::after,
+.check input:checked::after,
+.modal-again input[type="checkbox"]:checked::after{opacity:1}
+input[type="checkbox"].rk:checked::after,
+.check input[type="checkbox"]:checked::after,
+.modal-again input[type="checkbox"]:checked::after{transform:rotate(-45deg) scale(1)}
+input[type="radio"].rk:checked::after,
+.check input[type="radio"]:checked::after{transform:scale(1)}
+
+input[type="checkbox"].rk:active,
+input[type="radio"].rk:active,
+.check input:active,
+.modal-again input[type="checkbox"]:active{transform:scale(.9)}
+
+input[type="checkbox"].rk:focus-visible,
+input[type="radio"].rk:focus-visible,
+.check input:focus-visible,
+.modal-again input:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+
+/* 글자와 함께 쓰는 줄 */
+.check{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+  font-size:14.5px;color:var(--txt-2);user-select:none}
+.check:hover{color:var(--txt)}
