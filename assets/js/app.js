@@ -155,7 +155,7 @@ function renderPage() {
    탭 전환 — 헤더를 그대로 두고 본문만 교체합니다.
    페이지마다 전체를 새로 읽으면 헤더가 매번 깜빡이기 때문입니다.
    ========================================================= */
-const SPA_PAGES = ['index', 'play', 'guide', 'league', 'ranking', 'support', 'profile'];
+const SPA_PAGES = ['index', 'play', 'guide', 'league', 'ranking', 'support', 'profile', 'legal'];
 
 /* 주소는 .html 없이 씁니다 (Vercel cleanUrls).
    `/guide` `/guide.html` `/` 를 모두 같은 이름으로 맞춥니다. */
@@ -759,8 +759,8 @@ function renderNews() {
   if (!items.length) return void (box.outerHTML = `<div class="empty">등록된 공지가 없습니다.</div>`);
   box.innerHTML = items
     .map(
-      (n) => `
-      <article class="news-item">
+      (n, i) => `
+      <article class="news-item" data-news="${i}" role="button" tabindex="0">
         <div class="news-media"><img class="shot" src="${n.image_url || RIFT.image('news')}" alt=""></div>
         <div class="news-body">
           <div class="news-tag"><b>공지</b> <span>${dateOnly(n.created_at)}</span></div>
@@ -771,6 +771,31 @@ function renderNews() {
     )
     .join('');
 }
+
+/* 공지를 누르면 본문 전체를 모달로 보여 줍니다.
+   목록에서는 잘려 보이니 여기서 전문을 읽습니다. */
+function openNotice(n) {
+  if (!n) return;
+  openModal({
+    cls: 'modal-notice',
+    image: n.image_url || RIFT.image('news') || null,
+    title: n.title || '공지',
+    html: `<div class="notice-date">${dateOnly(n.created_at)}</div>
+           <div class="md">${discordMd(n.body || '')}</div>`,
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-news]');
+  if (el) openNotice(RIFT.notices[+el.dataset.news]);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest?.('[data-news]');
+  if (!el) return;
+  e.preventDefault();
+  openNotice(RIFT.notices[+el.dataset.news]);
+});
 
 function renderEvents() {
   const box = $('#events');
