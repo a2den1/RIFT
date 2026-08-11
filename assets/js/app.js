@@ -15,8 +15,10 @@ function skinHead(name, size = 28, cls = '') {
     encodeURIComponent(
       `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#7c47ff"/><text x="32" y="43" font-size="30" font-family="sans-serif" fill="#fff" text-anchor="middle">${name[0].toUpperCase()}</text></svg>`
     );
+  // lazy 로 두면 표가 화면에 들어와도 머리가 늦게 뜨거나 아예 안 뜨는 경우가 있어 바로 받습니다.
   return `<img class="${cls}" src="https://mc-heads.net/avatar/${encodeURIComponent(name)}/${size * 2}"
-    alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${fb}'">`;
+    alt="${name}" width="${size}" height="${size}" decoding="async"
+    onerror="this.onerror=null;this.src='${fb}'">`;
 }
 const medal = (i) => `<span class="medal${i < 3 ? ' m' + (i + 1) : ''}">${i + 1}</span>`;
 
@@ -135,6 +137,7 @@ async function navigate(url, push = true) {
     scrollTo(0, 0);
     markCurrentTab();
     renderPage();
+    document.dispatchEvent(new CustomEvent('rift:navigated'));
   } catch {
     location.href = url; // 실패하면 평소대로 이동
   }
@@ -163,7 +166,15 @@ function initRouter() {
     }
   });
 
-  addEventListener('popstate', () => navigate(location.href, false));
+  // 같은 페이지 안에서 #앵커 로 이동해도 popstate 가 발생합니다.
+  // 그때까지 본문을 새로 그리면 도움말 접힘 상태 같은 게 전부 초기화됩니다.
+  let lastPath = location.pathname;
+  addEventListener('popstate', () => {
+    if (location.pathname === lastPath) return; // 해시만 바뀐 경우
+    lastPath = location.pathname;
+    navigate(location.href, false);
+  });
+  document.addEventListener('rift:navigated', () => (lastPath = location.pathname));
 }
 
 /* =========================================================
@@ -284,20 +295,54 @@ function initAuthUI() {
   if (RIFT.user) addTab('profile.html', '내 정보');
   if (RIFT.isAdmin) addTab('admin.html', '관리자', 'admin-link');
 
-  if (!slot) return;
-  if (RIFT.user) {
-    const m = RIFT.user.user_metadata || {};
-    slot.innerHTML = `
-      <div class="me">
-        <img src="${m.avatar_url || m.picture || ''}" alt="" onerror="this.style.visibility='hidden'">
-        <span>${RIFT.discordName || '사용자'}</span>
-        <button id="signOut" title="로그아웃"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
-      </div>`;
-    $('#signOut').addEventListener('click', () => RIFT.signOut());
-  } else {
-    slot.innerHTML = `<a href="login.html" class="btn btn-soft btn-sm">로그인</a>`;
+  const m = (RIFT.user && RIFT.user.user_metadata) || {};
+  const avatar = m.avatar_url || m.picture || '';
+  const name = RIFT.discordName || '사용자';
+
+  // 헤더에서는 프로필로 가는 링크만 둡니다.
+  // 로그아웃 버튼을 여기 붙이면 너무 작아서 잘못 누르기 쉽습니다.
+  if (slot) {
+    slot.innerHTML = RIFT.user
+      ? `<a href="profile.html" class="me" title="내 정보">
+           <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
+           <span>${escapeHtml(name)}</span>
+         </a>`
+      : `<a href="login.html" class="btn btn-soft btn-sm login-btn">로그인</a>`;
+  }
+
+  // 모바일에서는 헤더 버튼이 숨겨지므로 사이드바 안에 계정 영역을 둡니다.
+  if (nav) {
+    $('.nav-account', nav)?.remove();
+    $('.nav-signout', nav)?.remove();
+
+    const acc = document.createElement('div');
+    acc.className = 'nav-account';
+    acc.innerHTML = RIFT.user
+      ? `<a href="profile.html" class="na-me">
+           <img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">
+           <div><b>${escapeHtml(name)}</b><small>내 정보 보기</small></div>
+           <i class="fa-solid fa-chevron-right"></i>
+         </a>`
+      : `<a href="login.html" class="btn btn-primary full">
+           <i class="fa-brands fa-discord"></i> 로그인
+         </a>`;
+    nav.prepend(acc);
+
+    if (RIFT.user) {
+      const out = document.createElement('button');
+      out.className = 'btn btn-soft nav-signout';
+      out.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃';
+      out.addEventListener('click', confirmSignOut);
+      nav.append(out);
+    }
   }
 }
+
+/* 로그아웃은 되돌릴 수 없으니 한 번 더 묻습니다. */
+function confirmSignOut() {
+  if (confirm('로그아웃할까요?')) RIFT.signOut();
+}
+window.confirmSignOut = confirmSignOut;
 
 /* =========================================================
    히어로 배경 영상

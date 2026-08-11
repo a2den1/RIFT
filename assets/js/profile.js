@@ -185,6 +185,12 @@
     document.getElementById('xpText').textContent = `${(profile.xp || 0).toLocaleString()} / ${b.to.toLocaleString()} XP`;
     requestAnimationFrame(() => (document.getElementById('xpFill').style.width = b.pct + '%'));
 
+    const out = document.getElementById('signOutBtn');
+    if (out && !out._bound) {
+      out._bound = true;
+      out.addEventListener('click', () => window.confirmSignOut && window.confirmSignOut());
+    }
+
     /* ---------- 마인크래프트 계정 인증 ---------- */
     await paintVerify(sb, profile);
 

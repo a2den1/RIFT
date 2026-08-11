@@ -113,12 +113,24 @@ html{scrollbar-width:thin;scrollbar-color:#3d3d4a transparent}
 .icon-btn:hover{color:var(--txt);background:var(--surface-3)}
 .nav-toggle{display:none}
 
-/* 로그인 상태 */
-.me{display:flex;align-items:center;gap:9px;padding:5px 13px 5px 5px;border-radius:999px;background:var(--surface-2)}
+/* 로그인 상태 — 헤더에서는 내 정보로 가는 링크만. 로그아웃은 여기 두지 않습니다. */
+.me{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 5px;border-radius:999px;
+  background:var(--surface-2);transition:background .2s}
+.me:hover{background:var(--surface-3)}
 .me img{width:28px;height:28px;border-radius:50%}
 .me span{font-size:14px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.me button{color:var(--txt-3);font-size:13px}
-.me button:hover{color:var(--txt)}
+
+/* 사이드바 계정 영역 */
+.nav-account{display:none}
+.na-me{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;
+  background:var(--surface-2);transition:background .2s}
+.na-me:hover{background:var(--surface-3)}
+.na-me img{width:40px;height:40px;border-radius:50%;flex-shrink:0}
+.na-me div{flex:1;min-width:0}
+.na-me b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.na-me small{font-size:12.5px;color:var(--txt-3)}
+.na-me i{color:var(--txt-3);font-size:12px}
+.nav-signout{display:none;margin-top:auto;justify-content:center}
 
 /* =========================================================
    버튼 / 폼
@@ -410,8 +422,7 @@ html{scrollbar-width:thin;scrollbar-color:#3d3d4a transparent}
   box-shadow:var(--sh-2);opacity:0;pointer-events:none;transition:opacity .15s ease;left:0;top:0}
 .profile.show{opacity:1}
 .profile-top{display:flex;gap:15px;align-items:center}
-.profile-skin{width:60px;height:124px;flex-shrink:0;object-fit:contain;image-rendering:pixelated;
-  background:var(--surface-3);border-radius:12px}
+.profile-skin{width:60px;height:124px;flex-shrink:0;object-fit:contain;image-rendering:pixelated}
 .profile-emblem{width:60px;height:60px;flex-shrink:0;border-radius:16px;background:var(--pri-soft);
   color:var(--accent);display:grid;place-items:center;font-size:24px}
 .profile-name{font-family:'Paperlogy',sans-serif;font-size:18px;font-weight:800;line-height:1.2}
@@ -603,8 +614,8 @@ main{animation:pageIn .28s var(--ease) both}
    내 정보
    ========================================================= */
 .me-card{display:flex;gap:26px;padding:28px;border-radius:var(--r-lg);background:var(--surface);flex-wrap:wrap}
-.me-skin{width:80px;height:165px;object-fit:contain;image-rendering:pixelated;
-  background:var(--surface-2);border-radius:14px;flex-shrink:0}
+/* 스킨은 배경이 투명해서 네모 판을 깔면 어색합니다. */
+.me-skin{width:80px;height:165px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}
 .me-body{flex:1;min-width:240px}
 .me-name{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .me-name h2{font-size:26px;font-weight:800}
@@ -807,7 +818,13 @@ main{animation:pageIn .28s var(--ease) both}
 
   .nav-toggle{display:inline-flex;position:relative;z-index:115}
   .header-actions .btn{display:none}
+  /* 로그인은 메뉴를 열지 않아도 바로 보여야 합니다. */
+  .header-actions .login-btn{display:inline-flex}
+  .me{padding:4px}
   .me span{display:none}
+
+  .nav-account{display:block;margin-bottom:10px}
+  .nav-signout{display:inline-flex}
 }
 @media (max-width:620px){
   .g2,.g3,.g4,.items,.jobs,.news,.crowns,.field-row{grid-template-columns:1fr}
