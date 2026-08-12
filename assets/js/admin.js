@@ -293,7 +293,7 @@ addEventListener('unhandledrejection', (e) => {
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-del]');
     if (!b) return;
-    if (!confirm('이 항목을 삭제할까요?')) return;
+    if (!(await riftConfirm('이 항목을 삭제할까요?', { ok: '삭제', danger: true }))) return;
     const { error } = await sb.from(b.dataset.del).delete().eq('id', b.dataset.id);
     if (error) return toast('삭제 실패: ' + error.message);
     toast('삭제했습니다.');

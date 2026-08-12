@@ -57,6 +57,10 @@ h1,h2,h3,h4,h5{font-family:'Paperlogy','Pretendard Variable',sans-serif;line-hei
 ::selection{background:var(--pri);color:#fff}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.87em;
   background:var(--surface-2);padding:.14em .5em;border-radius:7px;color:var(--accent)}
+/* display 를 지정한 요소에서도 hidden 이 이기게 합니다.
+   안 그러면 숨겼다고 생각한 것이 그대로 남아 있습니다. */
+[hidden]{display:none!important}
+
 .wrap{width:min(1160px,100% - 40px);margin-inline:auto}
 .hidden{display:none !important}
 
@@ -1195,3 +1199,64 @@ input[type="radio"].rk:focus-visible,
 .check{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
   font-size:14.5px;color:var(--txt-2);user-select:none}
 .check:hover{color:var(--txt)}
+
+/* =========================================================
+   커스텀 드롭다운 · 자동완성
+   진짜 <select> 는 뒤에 숨겨 두고 값만 씁니다.
+   ========================================================= */
+.rk-sel,.rk-sug{position:relative}
+.rk-sel > select{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}
+
+.rk-sel-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  padding:13px 16px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--txt);
+  font-size:15px;font-family:inherit;text-align:left;cursor:pointer;
+  transition:background .18s}
+.rk-sel-btn:hover{background:var(--surface-3)}
+.rk-sel.open .rk-sel-btn{background:var(--surface-3)}
+.rk-sel-btn > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-sel-ph{color:var(--txt-3)}
+.rk-sel-btn i{flex:none;font-size:11px;color:var(--txt-3);transition:transform .22s var(--ease)}
+.rk-sel.open .rk-sel-btn i{transform:rotate(180deg)}
+
+.rk-sel-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:60;
+  max-height:230px;overflow-y:auto;padding:6px;border-radius:var(--r-sm);
+  background:var(--surface-3);box-shadow:var(--sh-2);
+  opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .16s,transform .18s var(--ease)}
+.rk-sel.up .rk-sel-list{top:auto;bottom:calc(100% + 6px);transform:translateY(6px)}
+.rk-sel.open .rk-sel-list,.rk-sug.open .rk-sel-list{opacity:1;transform:none;pointer-events:auto}
+
+.rk-sel-item{display:block;width:100%;padding:10px 12px;border-radius:9px;
+  font-size:14.5px;font-family:inherit;color:var(--txt-2);text-align:left;cursor:pointer;
+  transition:background .14s,color .14s}
+.rk-sel-item:hover,.rk-sel-item:focus-visible{background:var(--surface-2);color:var(--txt);outline:none}
+.rk-sel-item.on{color:var(--txt);font-weight:600}
+.rk-sel-item[disabled]{opacity:.4;cursor:default}
+
+/* 자동완성 목록 */
+.rk-sug .rk-sel-list{opacity:0;transform:translateY(-6px);pointer-events:none}
+
+/* =========================================================
+   확인창
+   ========================================================= */
+.modal-ask .modal{max-width:380px}
+.modal-ask .modal-body{padding-top:26px}
+.ask-msg{font-size:16px;line-height:1.6}
+.btn-danger{background:#e5484d;color:#fff}
+.btn-danger:hover{background:#f0575c}
+
+/* =========================================================
+   홈 맨 아래 안내 상자 — 위로 빠지고 아래에서 올라오기
+   ========================================================= */
+/* 두 겹을 같은 자리에 포개고 상자 높이만 움직입니다.
+   .cta 의 좌우 여백은 그대로 두고, 겹은 그 안쪽을 꽉 채웁니다. */
+.cta.swapping{position:relative;overflow:hidden;padding-top:52px;padding-bottom:52px;
+  transition:height .5s var(--ease)}
+.cta.swapping .cta-layer{position:absolute;left:40px;right:40px;top:52px}
+.cta-layer{transition:opacity .38s var(--ease),transform .5s var(--ease)}
+.cta-layer.in{opacity:0;transform:translateY(38px)}
+.cta-layer.down{opacity:0;transform:translateY(-38px)}
+.cta-layer.go{opacity:0;transform:translateY(-38px)}
+.cta-layer.go-down{opacity:0;transform:translateY(38px)}
+.cta-layer .start-steps{max-width:420px;margin:20px auto 0;text-align:left}
+.cta-foot{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}

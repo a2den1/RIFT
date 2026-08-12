@@ -124,7 +124,7 @@
         ${reqHtml}`;
 
       root.querySelector('#leaveBtn')?.addEventListener('click', async () => {
-        if (!confirm('정말 탈퇴할까요?')) return;
+        if (!(await riftConfirm('정말 탈퇴할까요?', { ok: '탈퇴', danger: true }))) return;
         const r = await call('leave_club');
         if (!r.ok) return toast(r.error);
         toast('탈퇴했습니다.');

@@ -143,6 +143,7 @@ function renderPage() {
   window.initProfilePage && window.initProfilePage();
   $$('#clubMount').forEach((el) => window.mountClub && window.mountClub(el));
   initScopedPills();
+  initCustomInputs(); // 기본 드롭다운·자동완성을 우리 것으로
 
   $$('[data-plan]').forEach((b) =>
     b.addEventListener('click', () => toast(`${b.dataset.plan} 후원 문의는 디스코드에서 받습니다.`))
@@ -473,6 +474,11 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-start]');
   if (!b) return;
   e.preventDefault();
+
+  // 맨 아래 안내 상자 안에서 누른 것이라면, 모달 대신 그 자리에서 내용을 바꿉니다.
+  const cta = b.closest('.cta');
+  if (cta) return swapCta(cta);
+
   openModal({
     title: '서버 접속하기',
     html: `
@@ -660,8 +666,8 @@ function initAuthUI() {
 }
 
 /* 로그아웃은 되돌릴 수 없으니 한 번 더 묻습니다. */
-function confirmSignOut() {
-  if (confirm('로그아웃할까요?')) RIFT.signOut();
+async function confirmSignOut() {
+  riftConfirm('로그아웃할까요?', { ok: '로그아웃', danger: true }).then((y) => y && RIFT.signOut());
 }
 window.confirmSignOut = confirmSignOut;
 
@@ -1477,3 +1483,284 @@ function initReveal() {
   }
   initReveal._sweep = sweep;
 }
+
+/* =========================================================
+   기본 UI 갈아 끼우기
+   드롭다운 목록 · 확인창 · 자동완성은 원래 브라우저가 그립니다.
+   생김새를 우리가 정할 수 없어서 사이트와 따로 놉니다.
+   여기서 같은 동작을 하는 우리 것으로 바꿉니다.
+   ========================================================= */
+
+/* ---------- 확인창 ----------
+   confirm() 은 창을 띄우는 동안 화면이 멈추고 모양도 못 바꿉니다. */
+function riftConfirm(message, { ok = '확인', danger = false } = {}) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      resolve(v);
+    };
+
+    const wrap = openModal({
+      cls: 'modal-ask',
+      html: `<p class="ask-msg">${String(message).replace(/[&<>"]/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}</p>`,
+      buttons: `<button class="btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}" data-ask-ok>${ok}</button>`,
+    });
+
+    wrap.querySelector('[data-ask-ok]').addEventListener('click', () => {
+      finish(true);
+      closeModal();
+    });
+    // 닫기·배경·ESC 로 빠져나가면 취소로 봅니다.
+    wrap.addEventListener('rift:modalclose', () => finish(false));
+  });
+}
+window.riftConfirm = riftConfirm;
+
+/* ---------- 드롭다운 ----------
+   진짜 <select> 는 그대로 두고 화면에서만 감춥니다.
+   값·유효성 검사·폼 전송은 원래대로 브라우저가 처리합니다. */
+function buildSelect(sel) {
+  if (sel._rk || sel.multiple) return;
+  sel._rk = true;
+
+  const box = document.createElement('div');
+  box.className = 'rk-sel';
+  sel.parentNode.insertBefore(box, sel);
+  box.append(sel);
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'rk-sel-btn';
+  btn.setAttribute('aria-haspopup', 'listbox');
+  btn.setAttribute('aria-expanded', 'false');
+
+  const list = document.createElement('div');
+  list.className = 'rk-sel-list';
+  list.setAttribute('role', 'listbox');
+
+  box.append(btn, list);
+
+  const opts = () => [...sel.options];
+  const label = () => {
+    const o = sel.selectedOptions[0];
+    return o ? o.textContent : '';
+  };
+  const paint = () => {
+    const empty = !sel.value;
+    btn.innerHTML = `<span class="${empty ? 'rk-sel-ph' : ''}">${label() || '선택하세요'}</span>
+                     <i class="fa-solid fa-chevron-down"></i>`;
+    list.innerHTML = opts()
+      .map(
+        (o, i) => `<button type="button" class="rk-sel-item${o.selected ? ' on' : ''}"
+                     role="option" aria-selected="${o.selected}" data-i="${i}"
+                     ${o.disabled ? 'disabled' : ''}>${o.textContent}</button>`
+      )
+      .join('');
+  };
+
+  const close = () => {
+    box.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  };
+  const open = () => {
+    // 한 번에 하나만 열어 둡니다.
+    $$('.rk-sel.open').forEach((o) => o !== box && o.classList.remove('open'));
+    // 아래 공간이 좁으면 위로 펼칩니다.
+    const r = box.getBoundingClientRect();
+    box.classList.toggle('up', innerHeight - r.bottom < 240 && r.top > 240);
+    box.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+  };
+
+  btn.addEventListener('click', () => (box.classList.contains('open') ? close() : open()));
+
+  list.addEventListener('click', (e) => {
+    const it = e.target.closest('[data-i]');
+    if (!it) return;
+    sel.selectedIndex = +it.dataset.i;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    paint();
+    close();
+    btn.focus();
+  });
+
+  // 키보드로도 고를 수 있어야 합니다.
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      open();
+      list.querySelector('.rk-sel-item:not([disabled])')?.focus();
+    }
+  });
+  list.addEventListener('keydown', (e) => {
+    const items = [...list.querySelectorAll('.rk-sel-item:not([disabled])')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(i + 1, items.length - 1)]?.focus(); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); i <= 0 ? btn.focus() : items[i - 1].focus(); }
+    if (e.key === 'Escape')    { close(); btn.focus(); }
+  });
+
+  sel.addEventListener('change', paint);
+  paint();
+}
+
+/* ---------- 자동완성 ----------
+   <datalist> 도 목록을 브라우저가 그립니다.
+   list 속성을 떼고 같은 후보를 우리 목록으로 보여 줍니다. */
+function buildSuggest(input) {
+  if (input._rk) return;
+  const dl = document.getElementById(input.getAttribute('list'));
+  if (!dl) return;
+  input._rk = true;
+
+  const items = [...dl.options].map((o) => o.value);
+  input.removeAttribute('list'); // 기본 목록이 뜨지 않게
+
+  const box = document.createElement('div');
+  box.className = 'rk-sug';
+  input.parentNode.insertBefore(box, input);
+  box.append(input);
+
+  const list = document.createElement('div');
+  list.className = 'rk-sel-list';
+  box.append(list);
+
+  const paint = () => {
+    const q = input.value.trim().toLowerCase();
+    const hit = items.filter((v) => !q || v.toLowerCase().includes(q));
+    list.innerHTML = hit.length
+      ? hit.map((v) => `<button type="button" class="rk-sel-item" data-v="${v}">${v}</button>`).join('')
+      : '';
+    box.classList.toggle('open', hit.length > 0 && document.activeElement === input);
+  };
+
+  input.addEventListener('focus', paint);
+  input.addEventListener('input', paint);
+  input.addEventListener('blur', () => setTimeout(() => box.classList.remove('open'), 120));
+  list.addEventListener('mousedown', (e) => {
+    const it = e.target.closest('[data-v]');
+    if (!it) return;
+    e.preventDefault();
+    input.value = it.dataset.v;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    box.classList.remove('open');
+  });
+}
+
+/* 화면에 새로 그려지는 것들도 계속 바꿔 줍니다.
+   구단·관리자 화면은 데이터를 받은 뒤에 만들어지기 때문입니다. */
+function initCustomInputs(root = document) {
+  $$('select', root).forEach(buildSelect);
+  $$('input[list]', root).forEach(buildSuggest);
+}
+window.initCustomInputs = initCustomInputs;
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.rk-sel')) $$('.rk-sel.open').forEach((o) => o.classList.remove('open'));
+});
+
+new MutationObserver((muts) => {
+  for (const m of muts) {
+    for (const n of m.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      if (n.tagName === 'SELECT') buildSelect(n);
+      else if (n.matches?.('input[list]')) buildSuggest(n);
+      else initCustomInputs(n);
+    }
+  }
+}).observe(document.documentElement, { childList: true, subtree: true });
+
+/* =========================================================
+   홈 맨 아래 안내 상자
+   버튼을 누르면 모달을 띄우지 않고, 지금 있던 글이 위로 빠지면서
+   다음 내용이 아래에서 올라옵니다. 상자 높이도 같이 움직입니다.
+   ========================================================= */
+
+/* 두 겹을 포개 놓고 한쪽은 내보내고 한쪽은 들여옵니다.
+   up = true 면 위로 빠지고 아래에서 올라옵니다. 돌아갈 때는 반대. */
+function ctaSwap(cta, html, up) {
+  if (cta._busy) return;
+  cta._busy = true;
+
+  const from = cta.getBoundingClientRect().height;
+
+  const old = document.createElement('div');
+  old.className = 'cta-layer';
+  while (cta.firstChild) old.append(cta.firstChild);
+
+  const next = document.createElement('div');
+  next.className = 'cta-layer ' + (up ? 'in' : 'down');
+  next.innerHTML = html;
+
+  cta.style.height = from + 'px';
+  cta.classList.add('swapping');
+  cta.append(old, next);
+
+  const to = next.scrollHeight;
+
+  // 화면이 뒤에 있으면 requestAnimationFrame 이 멈춥니다.
+  // 거기에만 기대면 새 내용이 안 보이는 채로 끝나므로 타이머를 씁니다.
+  setTimeout(() => {
+    cta.style.height = to + 'px';
+    old.classList.add(up ? 'go' : 'go-down');
+    next.classList.remove('in', 'down');
+  }, 20);
+
+  $$('[data-copy-ip]', next).forEach((el) => (el.textContent = CFG.serverIp));
+  $$('[data-version]', next).forEach((el) => (el.textContent = CFG.version));
+  bindCopy();
+
+  let done = false;
+  const settle = () => {
+    if (done) return;
+    done = true;
+    old.remove();
+    // 전환이 중간에 끊겼어도 최종 모습은 반드시 맞춥니다.
+    // (창이 뒤에 있으면 전환이 멈춰 중간값에 갇히기도 합니다.)
+    next.classList.remove('in', 'down');
+    next.getAnimations?.().forEach((a) => a.finish());
+    cta.style.height = '';
+    cta.classList.remove('swapping');
+    cta.getAnimations?.().forEach((a) => a.finish());
+    cta._busy = false;
+  };
+  cta.addEventListener('transitionend', settle, { once: true });
+  setTimeout(settle, 700);
+}
+
+function ctaSteps() {
+  return `
+    <h2>서버 접속하기</h2>
+    <ol class="start-steps">
+      <li><b>마인크래프트 ${CFG.version} 실행</b><small>자바 에디션이 필요합니다.</small></li>
+      <li><b>멀티플레이 → 서버 추가</b><small>서버 이름은 자유롭게 정하세요.</small></li>
+      <li>
+        <b>서버 주소 입력</b>
+        <div class="start-ip">
+          <code data-copy-ip></code>
+          <button class="btn btn-soft btn-sm" data-copy-btn><i class="fa-regular fa-copy"></i> 복사</button>
+        </div>
+      </li>
+      <li><b>접속 후 <code>/직업</code></b><small>직업은 한 번 고르면 바꿀 수 없습니다.</small></li>
+    </ol>
+    <div class="cta-foot">
+      <a class="btn btn-primary" href="guide">도움말 보기</a>
+      <button class="btn btn-soft" data-cta-back>돌아가기</button>
+    </div>`;
+}
+
+function swapCta(cta) {
+  if (!cta._back) cta._back = cta.innerHTML; // 되돌릴 원래 내용
+  ctaSwap(cta, ctaSteps(), true);
+}
+
+document.addEventListener('click', (e) => {
+  const back = e.target.closest('[data-cta-back]');
+  if (!back) return;
+  const cta = back.closest('.cta');
+  if (cta && cta._back) ctaSwap(cta, cta._back, false);
+});
